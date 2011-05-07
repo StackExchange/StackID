@@ -1,0 +1,79 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Signup";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div class="registration-form">
+    <form method="post" action="/affiliate/form/signup/submit?affId=@ViewData["affId"]">
+        <table class="position-table">
+            <tr>
+                <td>
+                    Email
+                </td>
+                <td>
+                    <input type="text" class="framed-text-field" name="email" value="@ViewData["email"]" />
+                    <span class="form-help">A valid e-mail address.</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Name
+                </td>
+                <td>
+                    <input name="realname" class="framed-text-field" type="text" value="@ViewData["realname"]" />
+                    <span class="form-help">Optionally, your real name.</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Password
+                </td>
+                <td>
+                    <input name="password" class="framed-text-field" type="password" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Again
+                </td>
+                <td>
+                    <input name="password2" class="framed-text-field" type="password" />
+                </td>
+            </tr>
+            <tr>
+            <td></td>
+            <td>
+                @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
+            </td>
+            </tr>
+        </table>
+
+        <input type="hidden" name="background" value="@ViewData["Background"]" />
+        <input type="hidden" name="color" value="@ViewData["Color"]" />
+        <input type="submit" class="affiliate-button" value="Signup" />
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+    </form>
+</div>
+
+@*
+<div class="switch">
+    <a href="@(ViewData["SwitchUrl"])">Already have an account?</a>
+</div>
+*@
+
+@{
+    // If the affiliate has provided a callback, call out to the parent IFrame to let it know we've loaded
+    var onLoad = ViewData["OnLoad"];
+    
+    if(onLoad != null)
+    {
+        <script type="text/javascript">
+            if (parent.postMessage) {
+                parent.postMessage('@onLoad', '*');
+            }
+        </script>
+    }
+}

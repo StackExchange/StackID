@@ -1,0 +1,22 @@
+﻿@using OpenIdProvider
+@model List<OpenIdProvider.Models.Affiliate>
+
+@{
+    ViewData["Title"] = "List Owned Affiliates";
+}
+
+<div>
+    <p>
+        Here are all the affiliates you own.  You received secret key material for each of these when you created them, it should be in your registered e-mail's inbox.
+    </p>
+</div>
+
+<div class="affiliate-list">
+    <ol>
+        @foreach (var affiliate in this.Model)
+        {
+            <li><span class="affiliate">@affiliate.HostFilter</span> - Created @affiliate.CreationDate.ToRelativeTimeSpan()</li>
+        }
+    </ol>
+</div>
+

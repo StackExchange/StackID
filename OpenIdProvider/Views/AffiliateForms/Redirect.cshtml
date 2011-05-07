@@ -1,0 +1,21 @@
+﻿@using OpenIdProvider
+@model string
+
+@{
+    ViewData["Title"] = "Redirect";
+}
+
+<div class="explanation">
+    <p>
+    You are being redirected, please wait.
+    </p>
+</div>
+
+<script type="text/javascript" src="/Content/js/master.js"></script>
+<script type="text/javascript">
+    affiliate.redirect('@Model');
+</script>
+
+<noscript>
+    Because you have javascript disabled, you will need to <a href="@Model" target="_top">click this link</a> to complete the login process.
+</noscript>

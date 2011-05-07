@@ -1,0 +1,58 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div class="explanation">
+    <p>
+        Login using your OpenId account.
+    </p>
+</div>
+
+<div class="login-form">
+    <form method="post" action="/affiliate/form/login/submit?affId=@ViewData["affId"]">
+        <table class="position-table">
+            <tr>
+                <td>
+                    Email:
+                </td>
+                <td>
+                    <input class="framed-text-field" type="text" name="email" value="@ViewData["email"]" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Password:
+                </td>
+                <td>
+                    <input class="framed-text-field" type="password" name="password" />
+                </td>
+            </tr>
+        </table>
+        <input type="submit" class="affiliate-button" value="Login" />
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+    </form>
+</div>
+
+@*
+<div class="switch">
+    <a href="@(ViewData["SwitchUrl"])">Don't have an account?</a>
+</div>
+*@
+
+@{
+    // If the affiliate has provided a callback, call out to the parent IFrame to let it know we've loaded
+    var onLoad = ViewData["OnLoad"];
+    
+    if(onLoad != null)
+    {
+        <script type="text/javascript">
+            if (parent.postMessage) {
+                parent.postMessage('@onLoad', '*');
+            }
+        </script>
+    }
+}

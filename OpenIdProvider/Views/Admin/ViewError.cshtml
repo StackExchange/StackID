@@ -1,0 +1,205 @@
+﻿@using OpenIdProvider
+@model OpenIdProvider.Helpers.Error
+
+@{
+    ViewData["Title"] = Model.Message;
+}
+
+<h2>@Model.Type</h2>
+
+<div class="stack-trace">
+    <pre>
+        @Model.StackTrace
+    </pre>
+</div>
+
+<div class="error-occurred">
+    occurred on @Model.CreationDate.ToRelativeTimeSpan() &ndash;
+    <form action="/admin/error/delete/submit" method="post">
+        <input type="submit" class="orange" class="delete-error-button" value="Delete" />
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="hidden" name="id" value="@Model.Id" />
+    </form>
+</div>
+
+<div class="error-details">
+    @if (Model.UserId.HasValue())
+    {
+        <h3>User - <a href="/user/@Model.UserId">@Model.UserId</a></h3>
+    }
+
+    @if (Model.Parameters.Count > 0)
+    {
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        Value
+                    </td>
+                </tr>
+            </thead>
+
+        @{
+            var even = true;
+            foreach (var p in Model.Parameters)
+            {
+                if (p.Value.IsNullOrEmpty()) { continue; }
+                <text>
+                    <tr class="@(even ? "even" : "odd")">
+                        <td>
+                            @p.Key
+                        </td>
+                        <td>
+                            @p.Value
+                        </td>
+                    </tr>
+                </text>
+                even = !even;
+            }
+        }
+        </table>
+    }
+
+    @if (Model.ReceivedCookies.Count > 0)
+    {
+        <h3>Received Cookies</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        Value
+                    </td>
+                </tr>
+            </thead>
+        @{
+            var even = true;
+            foreach (var p in Model.ReceivedCookies)
+            {
+                <text>
+                <tr class="@(even ? "even" : "odd")">
+                    <td>
+                        @p.Key
+                    </td>
+                    <td>
+                        @p.Value
+                    </td>
+                </tr>
+                </text>
+                even = !even;
+            }
+        }
+        </table>
+    }
+
+    @if (Model.SendingCookies.Count > 0)
+    {
+        <h3>Sent Cookies</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        Value
+                    </td>
+                </tr>
+            </thead>
+        @{
+            var even = true;
+            foreach (var p in Model.SendingCookies)
+            {
+                <text>
+                <tr class="@(even ? "even" : "odd")">
+                    <td>
+                        @p.Key
+                    </td>
+                    <td>
+                        @p.Value
+                    </td>
+                </tr>
+                </text>
+                even = !even;
+            }
+        }
+        </table>
+    }
+    
+    @if (Model.ReceivedHeaders.Count > 0)
+    {
+        <h3>Received Headers</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        Value
+                    </td>
+                </tr>
+            </thead>
+        @{
+            var even = true;
+            foreach (var p in Model.ReceivedHeaders)
+            {
+                if (p.Value.IsNullOrEmpty()) { continue; }
+                
+                <text>
+                <tr class="@(even ? "even" : "odd")">
+                    <td>
+                        @p.Key
+                    </td>
+                    <td>
+                        @p.Value
+                    </td>
+                </tr>
+                </text>
+                even = !even;
+            }
+        }
+        </table>
+    }
+    
+    @if (Model.SendingHeaders.Count > 0)
+    {
+        <h3>Sending Headers</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        Value
+                    </td>
+                </tr>
+            </thead>
+        @{
+            var even = true;
+            foreach (var p in Model.SendingHeaders)
+            {
+                if (p.Value.IsNullOrEmpty()) { continue; }
+                <text>
+                <tr class="@(even ? "even" : "odd")">
+                    <td>
+                        @p.Key
+                    </td>
+                    <td>
+                        @p.Value
+                    </td>
+                </tr>
+                </text>
+                even = !even;
+            }
+        }
+        </table>
+    }
+</div>

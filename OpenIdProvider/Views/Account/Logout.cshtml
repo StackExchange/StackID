@@ -1,0 +1,19 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Logout";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div class="explanation">
+    <p>
+        Logout of your account.
+    </p>
+</div>
+
+<form method="post" action="/account/logout/submit">
+    <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+    <input type="submit" class="orange" value="Logout" />
+</form>
+

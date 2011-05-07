@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Database Name="OpenIdProvider.Database" EntityNamespace="OpenIdProvider.Models" ContextNamespace="OpenIdProvider.Models" Class="DBContext" Serialization="Unidirectional" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Table Name="dbo.Users" Member="Users">
+    <Type Name="User">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="LastActivityDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="EmailHash" Type="System.String" DbType="NVARCHAR(36) NOT NULL" CanBeNull="false" />
+      <Column Name="EmailSaltVersion" Type="System.Byte" DbType="tinyint NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordHash" Type="System.String" DbType="NVARCHAR(36) NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordSalt" Type="System.String" DbType="NVARCHAR(24) NOT NULL" CanBeNull="false" />
+      <Column Name="ProviderId" Type="System.Guid" DbType="UNIQUEIDENTIFIER NOT NULL" CanBeNull="false" />
+      <Column Name="SessionHash" Type="System.String" DbType="NVARCHAR(28) NULL" CanBeNull="true" />
+      <Column Name="SessionCreationDate" Type="System.DateTime" DbType="DATETIME NULL" CanBeNull="true" />
+      <Column Name="VanityProviderId" Type="System.String" DbType="NVARCHAR(40) NULL" CanBeNull="true" />
+      <Column Name="UserTypeId" Type="System.Byte" DbType="TINYINT NOT NULL" CanBeNull="false"/>
+    </Type>
+  </Table>
+  <Table Name="dbo.UserTypes" Member="UserTypes">
+    <Type Name="UserType">
+      <Column Name="Id" Type="System.Byte" DbType="TINYINT NOT NULL PRIMARY KEY" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="NVARCHAR(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Description" Type="System.String" DbType ="NVARCHAR(300) NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.UserHistoryTypes" Member="UserHistoryTypes">
+    <Type Name="UserHistoryType">
+      <Column Name="Id" Type="System.Byte" DbType="TINYINT NOT NULL PRIMARY KEY" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="NVARCHAR(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Description" Type="System.String" DbType ="NVARCHAR(300) NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.UserAttributeTypes" Member="UserAttributeTypes">
+    <Type Name="UserAttributeType">
+      <Column Name="Id" Type="System.Byte" DbType="TINYINT NOT NULL PRIMARY KEY" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="NVARCHAR(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Description" Type="System.String" DbType ="NVARCHAR(300) NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.UserHistory" Member="UserHistory">
+    <Type Name="UserHistory">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="UserHistoryTypeId" Type="System.Byte" DbType="TINYINT NOT NULL" CanBeNull="false" />
+      <Column Name="UserId" Type="System.Int32" DbType="INT NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false"/>
+      <Column Name="Comment" Type="System.String" DbType="NVARCHAR(400) NOT NULL" CanBeNull="false" />
+      <Column Name="IP" Type="System.String" DbType="NVARCHAR(41) NOT NULL" CanBeNull="false" />
+      <Association Name="UserHistory_UserHistoryType" Member="UserHistoryType" ThisKey="UserHistoryTypeId" OtherKey="Id" Type="UserHistoryType" IsForeignKey="true" />
+      <Association Name="UserHistory_User" Member="User" ThisKey="UserId" OtherKey="Id" Type="User" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.UserAttributes" Member="UserAttributes">
+    <Type Name="UserAttribute">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="UserId" Type="System.Int32" DbType="INT NOT NULL" CanBeNull="false" />
+      <Column Name="UserAttributeTypeId" Type="System.Byte" DbType="TINYINT NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="Encrypted" Type="System.String" DbType="NVARCHAR(267) NOT NULL" CanBeNull="false" />
+      <Column Name="HMAC" Type="System.String" DbType="NVARCHAR(27) NOT NULL" CanBeNull="false" />
+      <Column Name="IV" Type="System.String" DbType="NVARCHAR(24) NOT NULL" CanBeNull="false" />
+      <Column Name="KeyVersion" Type="System.Byte" DbType="TINYINT NOT NULL" CanBeNull="false" />
+      <Association Name="UserAttribute_User" Member="User" ThisKey="UserId" OtherKey="Id" Type="User" IsForeignKey="true" />
+      <Association Name="UserAttribute_UserAttributeType" Member="UserAttributeType" ThisKey="UserAttributeTypeId" OtherKey="Id" Type="UserAttributeType" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="PasswordResets" Member="PasswordResets">
+    <Type Name="PasswordReset">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="UserId" Type="System.Int32" DbType="INT NOT NULL" CanBeNull="false" />
+      <Column Name="TokenHash" Type="System.String" DbType="NVARCHAR(31) NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME" CanBeNull="false" />
+      <Association Name="PasswordResets_User" Member="User" ThisKey="UserId" OtherKey="Id" Type="User" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="PendingUsers" Member="PendingUsers">
+    <Type Name="PendingUser">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="AuthCode" Type="System.String" DbType="NVARCHAR(28) NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordHash" Type="System.String" DbType="NVARCHAR(36) NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordSalt" Type="System.String" DbType="NVARCHAR(24) NOT NULL" CanBeNull="false" />
+      <Column Name="DeletionDate" Type="System.DateTime" DbType="DATETIME NULL" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="Affiliates" Member="Affiliates">
+    <Type Name="Affiliate">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="OwnerUserId" Type="System.Int32" DbType="INT NOT NULL" CanBeNull="false" />
+      <Column Name="VerificationModulus" Type="System.String" DbType="NVARCHAR(4) NOT NULL" CanBeNull="false" />
+      <Column Name="HostFilter" Type="System.String" DbType="NVARCHAR(100) NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Association Name="Affiliates_OwnerUser" Member="OwnerUser" ThisKey="OwnerUserId" OtherKey="Id" Type="User" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="IPBans" Member="IPBans">
+    <Type Name="IPBan">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="IP" Type="System.String" DbType="NVARCHAR(41) NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="ExpirationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="Reason" Type="System.String" DbType="NVARCHAR(400) NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+</Database>

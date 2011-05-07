@@ -1,0 +1,25 @@
+﻿@using OpenIdProvider
+@model OpenIdProvider.Models.User
+
+@{
+    Layout = null;
+    
+    var provider = new Uri(Current.RequestUri, Response.ApplyAppPathModifier("~/openid/provider"));
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Html Discovery</title>
+    <link rel="openid.server" href="@provider">
+    <link rel="openid2.provider" href="@provider">
+    <link rel="openid.delegate" href="@Model.GetClaimedIdentifier()">
+    <link rel="openid2.local_id" href="@Model.GetClaimedIdentifier()">
+</head>
+<body>
+    <div>
+        Pay no attention to the man behind the curtain.
+    </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+﻿@using OpenIdProvider
+@model OpenIdProvider.Models.User
+
+@{
+    ViewData["Title"] = "Edit Profile - "+ Model.Email;
+}
+
+@ViewData.HandleErrorMessage()
+
+<form method="post" action="/user/edit/submit">
+    <table class="position-table">
+        <tr>
+            <td>
+                Real Name
+            </td>
+            <td>
+                <input type="text" name="real_name" value="@(ViewData["real_name"] ?? Model.RealName)" />
+                <span class="form-help">Optionally, your real name.</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Vanity OpenId
+            </td>
+            <td>
+                <input name="vanity" type="text" value="@(ViewData["vanity"] ?? Model.VanityProviderId)" />
+                <span class="form-help">Optionally, an easy to remember string for a vanity OpenId.</span>
+                <div class="form-help">
+                    Optional.<br />
+                    <br />
+                    An easy to remember string for when you are forced to manually enter your OpenId.<br />
+                    Example: "joe.everyman" or "john.q.public".
+                </div>
+            </td>
+        </tr>
+    </table>
+    <input type="hidden" name="id" value="@(Model.ProviderId)" />
+    <input type="hidden" name="fkey" value="@(Current.XSRFToken)" />
+    <input type="submit" class="orange" value="Update" />
+</form>

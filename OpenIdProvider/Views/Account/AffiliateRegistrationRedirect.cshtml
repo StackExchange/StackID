@@ -1,0 +1,13 @@
+﻿@model System.String
+
+@{
+    ViewData["Title"] = "You are being redirected";
+}
+
+If you are not automatically redirected, please click this <a href="@Model">link</a>.
+
+<script type="text/javascript">
+        var url = '@Model';
+        window.location = url;
+</script>
+

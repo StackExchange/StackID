@@ -1,0 +1,30 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Account Recovery";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div>
+    <p>
+        Forgotten your account's password?  Enter your e-mail address and we'll send you a recovery link.
+    </p>
+</div>
+
+<div class="recovery-form">
+    <form method="post" action="/account/recovery/submit">
+        <table class="position-table">
+            <tr>
+                <td>
+                    Email
+                </td>
+                <td>
+                    <input type="text" name="email" />
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="submit" class="orange" value="Send Recovery Email" />
+    </form>
+</div>

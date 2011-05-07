@@ -1,0 +1,34 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Register New Affiliate";
+}
+
+@ViewData.HandleErrorMessage()
+
+@* TODO: we need to document how to use an affiliate key, and all that jazz *@
+
+<div class="explanation">
+    <p>
+        Want to use us as a login provider?  Just enter your host address to get a secret key.
+    </p>
+</div>
+
+<div class="affiliate-form">
+    <form method="post" action="/affiliate/register/submit">
+        <table class="position-table">
+            <tr>
+                <td>
+                    Site Address Filter
+                </td>
+                <td>
+                    <input type="text" name="filter" value="@ViewData["filter"]" /><br />
+                    <span class="form-help">A regular expression matching the site you wish to acquire an affiliate code for.</span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="submit" class="orange" value="Create Affiliate" />
+    </form>
+</div>
+

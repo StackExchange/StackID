@@ -1,0 +1,104 @@
+﻿@using OpenIdProvider
+
+@{
+    var provider = new Uri(Current.RequestUri, Response.ApplyAppPathModifier("~/openid/provider"));
+}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>@ViewData["Title"]</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <script type="text/javascript" src="@Html.CacheBreak("/Content/js/master.js")"></script>
+    <link rel="stylesheet" type="text/css" href="@Html.CacheBreak("/Content/all.css")" />
+    @if (Current.ShouldBustFrames)
+    {
+        <text>
+            <script type="text/javascript">common.bustFrames();</script>
+
+            @* Doesn't make sense for affiliate pages to advertise an end point, so only do it if we're frame busting *@   
+            <link rel="openid.server" href="@provider">
+            <link rel="openid2.provider" href="@provider">
+        </text>
+    }
+    else
+    {
+        var backgroundOverriden = false;
+        
+        <text>
+            @* Include styles from the affiliate *@
+            @ViewData.IncludeThirdPartyStyles(out backgroundOverriden)
+        </text>
+        
+        if (!backgroundOverriden)
+        {
+            <style type="text/css">
+                body
+                {
+                    background: transparent !important;
+                }
+            </style>
+        }
+        
+    }
+    </head>
+<body>
+    @if (Current.ShouldBustFrames)
+    {
+        <div id="topbar">
+            <div id="menubar">
+                <div class="logocontainer">
+                    <a id="logo" href="/"></a>
+                </div>
+                <div id="menu">
+                   @if (Current.LoggedInUser == null)
+                   {
+                       <text>
+                            @Html.RenderTab("Login", "/account/login")
+                            @Html.RenderTab("Register", "/account/register")
+                            @Html.RenderTab("Account Recovery", "/account/recovery")
+                        </text>
+                   }
+                   else
+                   {
+                       <text>
+                            @Html.RenderTab("Profile", "/user")
+                            @Html.RenderTab("Logout", "/account/logout")
+                            @*
+                            Commented out until we've got a UI for these
+                            @Html.RenderTab("List Owned Affiliates", "/affiliate/list")
+                            @Html.RenderTab("Register Affiliate", "/affiliate/register")
+                            *@
+                        </text>
+                       
+                       if (Current.LoggedInUser.IsAdministrator)
+                       {
+                            @Html.RenderTab("Admin Tools", "/admin")
+                       }
+                   }
+                </div>
+            </div>
+        </div>
+        
+        <div id="content">
+            <div id="mainbar">
+                <h2 class="page-header">@ViewData["Title"]</h2>
+
+                @RenderBody()
+            </div>
+
+            <div id="footer">
+                @Html.Raw(OpenIdProvider.Helpers.Template.FormatTemplate("Footer"))
+            </div>
+        </div>
+    }
+    else
+    {
+        <div id="framed-content">
+            <h2 class="page-header">@ViewData["Title"]</h2>
+
+            @RenderBody()
+        </div>
+    }    
+</body>
+</html>

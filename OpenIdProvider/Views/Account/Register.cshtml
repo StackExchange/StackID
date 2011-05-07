@@ -1,0 +1,63 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div>
+    <p>
+        Enter a valid e-mail, and solve the captcha, and we'll send you a link to create an account.
+    </p>
+</div>
+
+<div class="registration-form">
+    <form method="post" action="/account/register/submit">
+        <table class="position-table">
+            <tr>
+                <td>
+                    Email
+                </td>
+                <td>
+                    <input type="text" name="email" value="@ViewData["email"]" />
+                    <span class="form-help">A valid e-mail address.</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Name
+                </td>
+                <td>
+                    <input name="realname" type="text" value="@ViewData["realname"]" />
+                    <span class="form-help">Optionally, your real name.</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Password
+                </td>
+                <td>
+                    <input name="password" type="password" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Again
+                </td>
+                <td>
+                    <input name="password2" type="password" />
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
+                </td>
+            </tr>
+        </table>
+
+    <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+    <input type="submit" class="orange" value="Send Confirmation Email" />
+    </form>
+</div>

@@ -1,0 +1,67 @@
+﻿@using OpenIdProvider
+@model OpenIdProvider.Models.User
+
+@{
+    var email = Model.Email;
+    var realName = Model.RealName;
+
+    var lastActivity = Model.LastActivityDate;
+
+    ViewData["Title"] = "User - " + email;
+}
+
+<div class="user-info">
+    @if (realName != null)
+    {
+        <text>
+            <span class="user-attribute">Real Name</span>: <span class="real-name">@realName</span><br />
+        </text>
+    }
+
+    <span class="user-attribute">Last Seen</span>: @lastActivity.ToRelativeTimeSpan()<br />
+
+    @if (Model.VanityProviderId.HasValue())
+    {
+        var vanityUrl = Model.GetVanityClaimedIdentifier().AbsoluteUri;
+        <text>
+        <span class="user-attribute">Vanity Id</span>: <a href="@vanityUrl">@vanityUrl</a><br />
+        </text>
+    }
+
+    @if (Current.LoggedInUser.IsAdministrator)
+    {
+        <a href="/user/@(Model.ProviderId)/edit">Edit Profile</a>
+    }
+    else
+    {
+        <a href="/user/edit">Edit Profile</a>
+    }
+</div>
+
+<div class="user-history">
+    <h3>History</h3>
+    <table class="tbl-data">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Comment</th>
+                <th>IP</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        @{
+            var even = true;
+            foreach (var h in Model.GetHistory())
+            {
+                <tr class="@(even ? "even" : "odd")">
+                    <td>@OpenIdProvider.Models.UserHistoryTypeId.GetDisplayName(h.UserHistoryTypeId)</td>
+                    <td>@h.Comment</td>
+                    <td>@h.IP</td>
+                    <td>@h.CreationDate.ToRelativeTimeSpan()</td>
+                </tr>
+                
+                even = !even;
+            }
+        }
+    </table>
+</div>

@@ -1,0 +1,68 @@
+﻿@using OpenIdProvider
+@model IEnumerable<OpenIdProvider.Helpers.Error>
+
+@{
+    ViewData["Title"] = Model.Count() + " Errors";
+}
+
+<div class="errors">
+    <table>
+        <thead>
+            <tr>
+                <td>
+                </td>
+                <td>
+                    Type
+                </td>
+                <td>
+                    Error
+                </td>
+                <td>
+                    Url
+                </td>
+                <td>
+                    Remote IP
+                </td>
+                <td>
+                    Time
+                </td>
+            </tr>
+        </thead>
+    @{
+        bool even = true;
+        foreach (var e in Model)
+        {
+            <tr class="@(even ? "even" : "odd")">
+                <td>
+                    <form action="/admin/error/delete/submit" method="post">
+                        <input type="submit" class="orange" class="delete-error-button" value="X" />
+                        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+                        <input type="hidden" name="id" value="@e.Id" />
+                        <input type="hidden" name="pagesize" value="@ViewData["pagesize"]" />
+                        <input type="hidden" name="page" value="@ViewData["page"]" />
+                    </form>
+                </td>
+                <td>
+                    @e.Type
+                </td>
+                <td>
+                    <a href="/admin/error/@e.Id">
+                        @e.Message
+                    </a>
+                </td>
+                <td>
+                    @e.Url
+                </td>
+                <td>
+                    @e.RemoteIP
+                </td>
+                <td>
+                    @e.CreationDate.ToRelativeTimeSpan()
+                </td>
+            </tr>
+        
+            even = !even;
+        }
+    }
+    </table>
+</div>

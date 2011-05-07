@@ -1,0 +1,88 @@
+﻿@using OpenIdProvider
+@model IEnumerable<OpenIdProvider.Models.IPBan>
+
+@{
+    ViewData["Title"] = ViewData["count"] + " IP Bans";
+    
+    var pageSize = (int)ViewData["pagesize"];
+    var page = (int)ViewData["page"];
+    var showall = (bool)ViewData["showAll"];
+}
+
+<div class="ip-bans">
+    <table>
+        <thead>
+            <tr><td>IP</td><td>Created</td><td>Expires</td><td>Reason</td></tr>
+        </thead>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td>
+                    <form method="post" action="/admin/ip-bans/delete/submit">
+                        <input type="submit" class="orange" class="delete-ip-ban-button" value="X" />
+                        <input type="hidden" name="id" value="@b.Id" />
+                        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+                        <input type="hidden" name="pagesize" value="@pageSize" />
+                        <input type="hidden" name="page" value="@page" />
+                        <input type="hidden" name="showall" value="@showall" />
+                    </form>
+                    @b.IP
+                </td>
+                <td>
+                    @b.CreationDate.ToRelativeTimeSpan()
+                </td>
+                <td>
+                    @b.ExpirationDate.ToRelativeTimeSpan()
+                </td>
+                <td>
+                    @b.Reason
+                </td>
+            </tr>
+        }
+    </table>
+
+    @if (showall)
+    {
+        <a href="/admin/ip-bans?showall=false&page=@page&pagesize=@pageSize">Hide expired bans</a>
+    }
+    else
+    {
+        <a href="/admin/ip-bans?showall=true&page=@page&pagesize=@pageSize">Show expired bans</a>
+    }
+
+    <br />
+    <br />
+
+    @* Ghetto paging for administrative function (TODO: Clean this up) *@
+    @if (page != 0)
+    {
+        <a href="/admin/ip-bans?showall=@showall&page=@(page-1)&pagesize=@pageSize">Previous Page</a>
+    }
+
+    @if (Model.Count() == pageSize)
+    {
+        if (page != 0)
+        {
+            <text>|</text>
+        }
+        
+        <a href="/admin/ip-bans?showall=@showall&page=@(page+1)&pagesize=@pageSize">Next Page</a>
+    }
+</div>
+
+<div class="new-ip-ban">
+    <h2>New Ban</h2>
+
+    @ViewData.HandleErrorMessage()
+
+    <form method="post" action="/admin/ip-bans/create/submit">
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="hidden" name="pagesize" value="@pageSize" />
+        <input type="hidden" name="page" value="@page" />
+        <input type="hidden" name="showall" value="@showall" />
+        IP: <input type="text" name="ip" value="@ViewData["ip"]" /><br />
+        Expiration Date: <input type="text" name="expires" value="@ViewData["expires"]" /><br />
+        Reason: <input type="text" name="reason" value="@ViewData["reason"]" /> <br />
+        <input type="submit" class="orange" value="Create" />
+    </form>
+</div>

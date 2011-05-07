@@ -1,0 +1,48 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div class="explanation">
+    <p>
+        Login to your OpenId to view your account history, and make changes.
+    </p>
+</div>
+
+<div class="login-form">
+    <form method="post" action="/account/login/submit">
+        <div>
+            <table class="position-table">
+                <tr>
+                    <td>
+                        Email
+                    </td>
+                    <td>
+                        <input type="text" name="email" value="@ViewData["email"]" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Password
+                    </td>
+                    <td>
+                        <input type="password" name="password" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+
+        @{ var session = (string)ViewData["session"]; }
+           
+        @if(session.HasValue())
+        {
+            <input type="hidden" name="session" value="@session" />
+        }
+
+        <input type="submit" class="orange" value="Login" />
+    </form>
+</div>
