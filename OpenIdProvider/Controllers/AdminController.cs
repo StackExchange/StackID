@@ -19,24 +19,16 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Simple index of all /admin routes
         /// </summary>
-        [Route("admin", AuthorizedUser.Adminstrator)]
+        [Route("admin", AuthorizedUser.Administrator)]
         public ActionResult Index()
         {
             return View();
         }
 
-        [Route("admin/xsrfs", AuthorizedUser.Adminstrator)]
-        public ActionResult XSRFs(string cookie)
-        {
-            var cookieHash = Current.WeakHash(cookie);
-
-            return TextPlain(Current.GetFromCache<string>("xsrf-" + cookieHash));
-        }
-
         /// <summary>
         /// List all errors in a handy web interface
         /// </summary>
-        [Route("admin/errors", AuthorizedUser.Adminstrator)]
+        [Route("admin/errors", AuthorizedUser.Administrator)]
         public ActionResult ListErrors(int? pagesize, int? page)
         {
             //if (!Current.IsInternalRequest) return IrrecoverableError("Error Log Not Accessible from this IP", "For security reasons, you must be on an internal IP (VPN or otherwise) to view the error log.");
@@ -52,7 +44,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// View a single error.
         /// </summary>
-        [Route("admin/error/{id}", RoutePriority.Low, AuthorizedUser.Adminstrator)]
+        [Route("admin/error/{id}", RoutePriority.Low, AuthorizedUser.Administrator)]
         public ActionResult ViewError(string id)
         {
             //if (!Current.IsInternalRequest) return IrrecoverableError("Error Log Not Accessible from this IP", "For security reasons, you must be on an internal IP (VPN or otherwise) to view the error log.");
@@ -70,7 +62,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Delete an error, given its id.
         /// </summary>
-        [Route("admin/error/delete/submit", HttpVerbs.Post, AuthorizedUser.Adminstrator)]
+        [Route("admin/error/delete/submit", HttpVerbs.Post, AuthorizedUser.Administrator)]
         public ActionResult DeleteError(string id, int? pagesize, int? page)
         {
             //if (!Current.IsInternalRequest) return NotFound();
@@ -101,14 +93,14 @@ namespace OpenIdProvider.Controllers
         /// Not really protected by much, as generating the key does nothing,
         /// it still has to be added to the actual file.
         /// </summary>
-        [Route("admin/key-gen", AuthorizedUser.Adminstrator | AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous)]
+        [Route("admin/key-gen", AuthorizedUser.Administrator | AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous)]
         public ActionResult GenerateKey()
         {
             var crypto = new AesCryptoServiceProvider();
             crypto.GenerateKey();
 
             var key = Convert.ToBase64String(crypto.Key);
-            var salt = BCrypt.GenerateSalt();
+            var salt = Current.GenerateSalt();
             var hmac = Convert.ToBase64String(Current.Random(64));
 
             var ret =
@@ -130,7 +122,7 @@ namespace OpenIdProvider.Controllers
         /// List all ip bans for the site, and provides some minor
         /// UI for adding/removing them.
         /// </summary>
-        [Route("admin/ip-bans", AuthorizedUser.Adminstrator)]
+        [Route("admin/ip-bans", AuthorizedUser.Administrator)]
         public ActionResult IPBans(bool? showall, int? page, int? pagesize)
         {
             var all = showall.GetValueOrDefault(false);
@@ -157,7 +149,7 @@ namespace OpenIdProvider.Controllers
         /// 
         /// Lets us get away with using RecoverableError in some convenient places.
         /// </summary>
-        [Route("admin/ip-bans/create", AuthorizedUser.Adminstrator)]
+        [Route("admin/ip-bans/create", AuthorizedUser.Administrator)]
         public ActionResult IPBansCreateLanding(bool? showAll, int? page, int? pagesize)
         {
             return IPBans(showAll, page, pagesize);
@@ -166,7 +158,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Deletes (sets expiration to *now*) an IP ban.
         /// </summary>
-        [Route("admin/ip-bans/delete/submit", HttpVerbs.Post, AuthorizedUser.Adminstrator)]
+        [Route("admin/ip-bans/delete/submit", HttpVerbs.Post, AuthorizedUser.Administrator)]
         public ActionResult DeleteIPBan(int? id, int? pagesize, int? page, bool? showall)
         {
             if (id.HasValue)
@@ -199,7 +191,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Creates a new IP ban.
         /// </summary>
-        [Route("admin/ip-bans/create/submit", HttpVerbs.Post, AuthorizedUser.Adminstrator)]
+        [Route("admin/ip-bans/create/submit", HttpVerbs.Post, AuthorizedUser.Administrator)]
         public ActionResult CreateIPBan(string ip, string expires, string reason, bool? showall, int? page, int? pagesize)
         {
             var retryValues = new { ip, expires, reason };

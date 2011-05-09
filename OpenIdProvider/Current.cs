@@ -210,6 +210,45 @@ namespace OpenIdProvider
             }
         }
 
+        private const int DefaultHashIterations = 1000;
+        private static int? HashIterationsCached;
+        /// <summary>
+        /// The number of iterations to use when calculating a Secure or System hash.
+        /// 
+        /// This value can vary over the lifetime of the site, so it should be stored.
+        /// </summary>
+        private static int HashIterations
+        {
+            get
+            {
+                if (!HashIterationsCached.HasValue)
+                {
+                    if (WebConfigurationManager.AppSettings.AllKeys.Contains("HashIterations"))
+                    {
+                        int val;
+                        if (int.TryParse(WebConfigurationManager.AppSettings["HashIterations"], out val))
+                        {
+                            if (val < DefaultHashIterations) throw new ArgumentException("HashIterations cannot be less than 4000");
+                            HashIterationsCached = val;
+                        }
+                        else
+                        {
+                            HashIterationsCached = DefaultHashIterations;
+                        }
+                    }
+                    else
+                    {
+                        HashIterationsCached = DefaultHashIterations;
+                    }
+                }
+
+                return HashIterationsCached.Value;
+            }
+        }
+
+        // Salt sizes throughout the system
+        private const int SALT_SIZE = 16;
+
         static Current()
         {
             AesProvider = new AesCryptoServiceProvider();
@@ -876,11 +915,9 @@ namespace OpenIdProvider
         /// </summary>
         public static string SecureHash(string value, out string salt)
         {
-            salt = BCrypt.GenerateSalt();
+            salt = GenerateSalt();
 
-            var saltAndHash = BCrypt.HashPassword(value, salt);
-
-            return saltAndHash.Substring(salt.Length);
+            return Hash(value, salt);
         }
 
         /// <summary>
@@ -888,9 +925,7 @@ namespace OpenIdProvider
         /// </summary>
         public static string SecureHash(string value, string salt)
         {
-            var saltAndHash = BCrypt.HashPassword(value, salt);
-
-            return saltAndHash.Substring(salt.Length);
+            return Hash(value, salt);
         }
 
         /// <summary>
@@ -906,6 +941,44 @@ namespace OpenIdProvider
                 RandomSource.GetBytes(ret);
 
             return ret;
+        }
+
+        /// <summary>
+        /// Convenience wrapper around Random to grab a new salt value.
+        /// Treat this value as opaque, as it captures iterations.
+        /// </summary>
+        public static string GenerateSalt(int? explicitIterations = null)
+        {
+            if (explicitIterations.HasValue && explicitIterations.Value < DefaultHashIterations)
+                throw new ArgumentException("Cannot be less than " + DefaultHashIterations, "explicitIterations");
+
+            var bytes = Random(SALT_SIZE);
+
+            var iterations = (explicitIterations ?? HashIterations).ToString("X");
+
+            return iterations + "." + Convert.ToBase64String(bytes);
+        }
+
+        /// <summary>
+        /// Backs Secure and System hashes.
+        /// 
+        /// Uses PBKDF2 internally, as implemented by the Rfc2998DeriveBytes class.
+        /// 
+        /// See http://en.wikipedia.org/wiki/PBKDF2
+        /// and http://msdn.microsoft.com/en-us/library/bwx8t0yt.aspx
+        /// </summary>
+        private static string Hash(string value, string salt)
+        {
+            var i = salt.IndexOf('.');
+            var iters = int.Parse(salt.Substring(0, i), System.Globalization.NumberStyles.HexNumber);
+            salt = salt.Substring(i + 1);
+
+            using(var pbkdf2 = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(value), Convert.FromBase64String(salt), iters))
+            {
+                var key = pbkdf2.GetBytes(24);
+
+                return Convert.ToBase64String(key);
+            }
         }
 
         /// <summary>

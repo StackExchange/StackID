@@ -12,7 +12,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Bounce to a user's profile based on vanity id.
         /// </summary>
-        [Route("{vanityId}", RoutePriority.Low, AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous | AuthorizedUser.Adminstrator)]
+        [Route("{vanityId}", RoutePriority.Low, AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous | AuthorizedUser.Administrator)]
         public ActionResult VanityIdentifier(string vanityId)
         {
             var user = Models.User.GetFromVanityId(vanityId);
@@ -36,7 +36,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Identities the specified id.
         /// </summary>
-        [Route("user/{id}", RoutePriority.Low, AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous | AuthorizedUser.Adminstrator)]
+        [Route("user/{id}", RoutePriority.Low, AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous | AuthorizedUser.Administrator)]
         public ActionResult Identity(string id, bool? xrds)
         {
             if (id.IsNullOrEmpty()) return NotFound();
@@ -64,7 +64,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Profile editor for arbitrary users, only accessible to Administrators.
         /// </summary>
-        [Route("user/{id}/edit", AuthorizedUser.Adminstrator)]
+        [Route("user/{id}/edit", AuthorizedUser.Administrator)]
         public ActionResult EditUser(string id)
         {
             if (id.IsNullOrEmpty()) return NotFound();

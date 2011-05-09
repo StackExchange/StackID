@@ -28,6 +28,17 @@ namespace OpenIdProvider.Controllers
         private DotNetOpenAuth.OpenId.Provider.OpenIdProvider OpenIdProvider = new DotNetOpenAuth.OpenId.Provider.OpenIdProvider();
 
         /// <summary>
+        /// Common code to stash an authRequest behind in a session.
+        /// </summary>
+        private static string CreationSession(IAuthenticationRequest authRequest)
+        {
+            var session = Current.UniqueId().ToString();
+            Current.AddToCache(session, authRequest, TimeSpan.FromMinutes(15));
+
+            return session;
+        }
+
+        /// <summary>
         /// Entry point for logging in using an OpenId provided by this site.
         /// </summary>
         //[Route("openid/provider")] - mapped in global to bypass XSRF POST check
@@ -45,16 +56,34 @@ namespace OpenIdProvider.Controllers
 
                     if (sendAssertion)
                     {
+                        if (!Current.LoggedInUser.HasGrantedAuthorization(authRequest.Realm.Host))
+                        {
+                            var session = CreationSession(authRequest);
+
+                            return
+                                SafeRedirect(
+                                    (Func<string, ActionResult>)(new AccountController()).PromptForAuthorization,
+                                    new
+                                    {
+                                        session
+                                    }
+                                );
+                        }
+
                         // We know who the user is, and how to respond
                         return this.SendAssertion(authRequest);
                     }
                     else
                     {
-                        // User needs to log in
+                        // A logged in user is trying to auth as somebody else.
+                        //    Proper response here is going to be to log them out, so they can log in.
+                        if (Current.LoggedInUser != null)
+                        {
+                            Current.LoggedInUser.Logout(Current.Now);
+                        }
 
                         // Stash the pending request into cache until they have
-                        var session = Guid.NewGuid().ToString();
-                        Current.AddToCache(session, authRequest, TimeSpan.FromMinutes(15));
+                        var session = CreationSession(authRequest);
 
                         return
                             SafeRedirect(
@@ -106,6 +135,18 @@ namespace OpenIdProvider.Controllers
                     "Cannot Complete Login",
                     "Detected an attempt to send an assertion when the identifier (" + authRequest.LocalIdentifier + ") is not owned by the logged in user."
                 );
+            }
+
+            if (!Current.LoggedInUser.HasGrantedAuthorization(authRequest.Realm.Host))
+            {
+                return
+                    SafeRedirect(
+                        (Func<string, ActionResult>)(new AccountController()).PromptForAuthorization,
+                        new
+                        {
+                            session
+                        }
+                    );
             }
 
             bool noPromptB = false;
@@ -207,42 +248,6 @@ namespace OpenIdProvider.Controllers
                 throw new ArgumentNullException("authReq");
             }
             return Current.LoggedInUser.ClaimsId(authReq.LocalIdentifier);
-        }
-
-        /// <summary>
-        /// Returns a set of attributes the given requests is asking for.
-        /// </summary>
-        private List<byte> RequestedAttributes(IAuthenticationRequest authReq)
-        {
-            var ret = new List<byte>();
-
-            // SREG
-            var claimsReq = authReq.GetExtension<ClaimsRequest>();
-            if (claimsReq != null)
-            {
-                if (claimsReq.Email != DemandLevel.NoRequest)
-                {
-                    ret.Add(UserAttributeTypeId.Email);
-                }
-
-                if (claimsReq.FullName != DemandLevel.NoRequest)
-                {
-                    ret.Add(UserAttributeTypeId.RealName);
-                }
-            }
-
-            // AX
-            var fetchReq = authReq.GetExtension<FetchRequest>();
-            if (fetchReq != null)
-            {
-                if (fetchReq.Attributes.Contains(WellKnownAttributes.Contact.Email))
-                    ret.Add(UserAttributeTypeId.Email);
-
-                if (fetchReq.Attributes.Contains(WellKnownAttributes.Name.FullName))
-                    ret.Add(UserAttributeTypeId.RealName);
-            }
-
-            return ret;
         }
     }
 }

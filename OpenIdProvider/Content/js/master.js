@@ -104,7 +104,7 @@ var help = function () {
                 backgroundColor: "white", // disabled: disabled causes a different color in most browsers
                 color: "black",
                 opacity: 1,
-                width: jText.width(),
+                width: jText.width() + 2,
                 height: jText.height()
             });
 
@@ -117,22 +117,8 @@ var help = function () {
             actualOverlay.insertBefore(jText);
 
             // layout correction
-
-            var yDiff = jText.offset().top - actualOverlay.offset().top;
-            if (yDiff != 0) {
-                // this part is mainly for Chrome; it has a few issues with collapsing margins of position: absolute inline elements
-                // (meaning: it *does* collapse them, for whatever reason)
-                var thisMTop = parseInt(actualOverlay.css("margin-top"));
-                var newMTop = thisMTop + yDiff;
-                if (!jText.is("textarea"))
-                    newMTop = parseInt(actualOverlay.prevAll(":visible").eq(0).css("margin-bottom")) + thisMTop;
-                actualOverlay.css("margin-top", newMTop);
-            }
-            var xDiff = jText.offset().left - actualOverlay.offset().left;
-            if (xDiff != 0) {
-                var thisMLeft = parseInt(actualOverlay.css("margin-left"));
-                actualOverlay.css("margin-left", thisMLeft + xDiff);
-            }
+            actualOverlay.css("margin-left", "0px");
+            actualOverlay.css("margin-top", "2px");
         }
     }
 

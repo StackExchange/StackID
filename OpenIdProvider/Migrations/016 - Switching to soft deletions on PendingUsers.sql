@@ -1,6 +1,6 @@
--- Drop the UserSiteAuthorizations table
-   -- We only track name and e-mail, we think its OK to provide those to everyone
-   -- accordingly, all this UserSiteAuthorizations stuff is pointless complexity
+-- Switching to soft deletions on PendingUsers
+   -- Hard deletes just cause too many diagnostic problems, though we'll still probably
+   -- need to start culling these at some point
 
 IF dbo.fnColumnExists('PendingUsers', 'DeletionDate') = 0
 BEGIN

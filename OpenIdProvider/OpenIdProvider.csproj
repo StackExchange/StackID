@@ -140,7 +140,6 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\Error.cs" />
-    <Compile Include="Helpers\BCrypt.cs" />
     <Compile Include="Helpers\Captcha.cs" />
     <Compile Include="Helpers\Email.cs" />
     <Compile Include="Helpers\IPBanner.cs" />
@@ -204,6 +203,7 @@
     <Content Include="Migrations\014 - Drop UserSiteAuthorizations Table.sql" />
     <Content Include="Migrations\015 - Add Password and Name columns to PendingUsers table.sql" />
     <Content Include="Migrations\016 - Switching to soft deletions on PendingUsers.sql" />
+    <Content Include="Migrations\017 - Expand the size of Salt and Hash columns.sql" />
     <Content Include="ReadMe.txt" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
@@ -253,6 +253,7 @@
     <Content Include="Views\Templates\PasswordChanged.cshtml" />
     <Content Include="Views\Templates\ResetPassword.cshtml" />
     <Content Include="Views\Account\AffiliateRegistrationRedirect.cshtml" />
+    <Content Include="Views\Account\PromptForAuthorization.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />

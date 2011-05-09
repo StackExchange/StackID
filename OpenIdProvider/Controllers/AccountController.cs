@@ -6,6 +6,7 @@ using System.Web.Mvc;
 using OpenIdProvider.Helpers;
 using OpenIdProvider.Models;
 using System.Net;
+using DotNetOpenAuth.OpenId.Provider;
 
 namespace OpenIdProvider.Controllers
 {
@@ -332,6 +333,13 @@ namespace OpenIdProvider.Controllers
 
             newUser.Login(now);
 
+            // This account was created to faciliate this login, there's no need to prompt for permission.
+            Uri parsedCallback;
+            if (Uri.TryCreate(callback, UriKind.Absolute, out parsedCallback))
+            {
+                newUser.GrantAuthorization(parsedCallback.Host);
+            }
+
             var redirectUrl =
                 callback +
                 (callback.Contains('?') ? '&' : '?') +
@@ -339,6 +347,52 @@ namespace OpenIdProvider.Controllers
 
             // Hack: We can't redirect or the cookie doesn't attach under most browsers
             return View("AffiliateRegistrationRedirect", (object)redirectUrl);
+        }
+
+
+        /// <summary>
+        /// Prompt's the logged in user for their permission to send credentials to
+        /// the site identified in an auth session.
+        /// </summary>
+        [Route("account/prompt", AuthorizedUser.LoggedIn)]
+        public ActionResult PromptForAuthorization(string session)
+        {
+            if (!session.HasValue()) return IrrecoverableError("Could Not Find Pending Authentication Request", "No session was provided.");
+
+            var authRequest = Current.GetFromCache<IAuthenticationRequest>(session);
+
+            if (authRequest == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+
+            ViewData["session"] = session;
+
+            return View((object)authRequest.Realm.Host);
+        }
+
+        /// <summary>
+        /// Handles the submission from PromptForAuthorization.
+        /// 
+        /// The user grants authorization to the site identified in the session, and resumes the
+        /// auth session.
+        /// </summary>
+        [Route("account/prompt/submit", HttpVerbs.Post, AuthorizedUser.LoggedIn)]
+        public ActionResult ConfirmAuthorization(string session)
+        {
+            if (!session.HasValue()) return IrrecoverableError("Could Not Find Pending Authentication Request", "No session was provided.");
+
+            var authRequest = Current.GetFromCache<IAuthenticationRequest>(session);
+
+            if (authRequest == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+
+            Current.LoggedInUser.GrantAuthorization(authRequest.Realm.Host);
+
+            return
+                SafeRedirect(
+                    (Func<string, string, ActionResult>)(new OpenIdController()).ResumeAfterLogin,
+                    new
+                    {
+                        session
+                    }
+                );
         }
     }
 }

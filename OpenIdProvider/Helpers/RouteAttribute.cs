@@ -102,7 +102,7 @@ namespace OpenIdProvider.Helpers
 
 
         public RouteAttribute(string url)
-            : this(url, "", null, RoutePriority.Default, AuthorizedUser.Adminstrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
+            : this(url, "", null, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
         {
         }
 
@@ -112,12 +112,12 @@ namespace OpenIdProvider.Helpers
         }
 
         public RouteAttribute(string url, HttpVerbs verbs)
-            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Adminstrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
+            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
         {
         }
 
         public RouteAttribute(string url, HttpVerbs verbs, AuthorizedUser users)
-            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Adminstrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
+            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
         {
         }
 
@@ -205,7 +205,7 @@ namespace OpenIdProvider.Helpers
 
             if ((AuthorizedUsers & AuthorizedUser.LoggedIn) != 0) userCheck |= Current.LoggedInUser != null;
             if ((AuthorizedUsers & AuthorizedUser.Anonymous) != 0) userCheck |= Current.LoggedInUser == null;
-            if ((AuthorizedUsers & AuthorizedUser.Adminstrator) != 0) userCheck |= Current.LoggedInUser != null && Current.LoggedInUser.IsAdministrator;
+            if ((AuthorizedUsers & AuthorizedUser.Administrator) != 0) userCheck |= Current.LoggedInUser != null && Current.LoggedInUser.IsAdministrator;
 
             Current.RejectRequest = !(verbCheck && xsrfCheck && userCheck);
 
@@ -255,6 +255,6 @@ namespace OpenIdProvider.Helpers
     {
         Anonymous = 1,
         LoggedIn = 2,
-        Adminstrator = 4
+        Administrator = 4
     }
 }

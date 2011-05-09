@@ -52,6 +52,7 @@ namespace OpenIdProvider.Models
             }
         }
 
+        // TODO: This has got to be refactor to be declarative, this method has become insane
         public override void SubmitChanges(System.Data.Linq.ConflictMode failureMode)
         {
             if (!RestrictToCurrentUserAttributes)
@@ -74,12 +75,13 @@ namespace OpenIdProvider.Models
             if (pendingChanges.Inserts.Count > 0)
             {
                 // Only allow inserts to the UserHistory table
-                if (pendingChanges.Inserts.Any(t => t.GetType() != typeof(UserHistory) && t.GetType() != typeof(User) && t.GetType() != typeof(UserAttribute)))
-                    throw new InvalidOperationException("Cannot insert any records except new users, new attributes, and new user histories");
+                if (pendingChanges.Inserts.Any(t => t.GetType() != typeof(UserHistory) && t.GetType() != typeof(User) && t.GetType() != typeof(UserAttribute) && t.GetType() != typeof(UserSiteAuthorization)))
+                    throw new InvalidOperationException("Cannot insert any records except new users, new attributes, new user site authorizations, and new user histories");
 
-                // Only allow inserts of new UserHistory records if they refer to the currently logged in user or the user being created
+                // Only allow inserts of new records if they refer to the currently logged in user or the user being created
                 if (pendingChanges.Inserts.OfType<UserHistory>().Any(h => !permittedUserIds.Contains(h.UserId)) ||
-                    pendingChanges.Inserts.OfType<UserAttribute>().Any(a => !permittedUserIds.Contains(a.UserId)))
+                    pendingChanges.Inserts.OfType<UserAttribute>().Any(a => !permittedUserIds.Contains(a.UserId)) ||
+                    pendingChanges.Inserts.OfType<UserSiteAuthorization>().Any(au => !permittedUserIds.Contains(au.UserId)))
                         throw new InvalidOperationException("Cannot insert any history records except for the currently logged in user");
             }
 

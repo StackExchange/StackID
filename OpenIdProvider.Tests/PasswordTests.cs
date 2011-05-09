@@ -14,6 +14,37 @@ namespace OpenIdProvider.Tests
     public class PasswordTests
     {
         [Test]
+        public void SaltSize()
+        {
+            var sizes = new List<int>();
+
+            for (int i = 0; i < 100; i++)
+            {
+                var salt = Current.GenerateSalt(Int32.MaxValue);
+
+                sizes.Add(salt.Length);
+            }
+
+            Assert.IsTrue(sizes.Max() <= 33, "Max length = " + sizes.Max());
+        }
+
+        [Test]
+        public void HashSize()
+        {
+            var sizes = new List<int>();
+
+            string salt;
+            for (int i = 0; i < 100; i++)
+            {
+                var hash = Current.SecureHash(Convert.ToBase64String(Current.Random(32)), out salt);
+
+                sizes.Add(hash.Length);
+            }
+
+            Assert.IsTrue(sizes.Max() <= 32, "hash.Length = " + sizes.Max());
+        }
+
+        [Test]
         public void ValidPasswords()
         {
             string ignored;

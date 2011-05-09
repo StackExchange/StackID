@@ -1,0 +1,15 @@
+﻿@using OpenIdProvider
+@model System.String
+
+@{
+    ViewData["Title"] = Model + " wants you to login";
+}
+
+<p>Do you wish to send your information?</p>
+
+<form method="post" action="/account/prompt/submit">
+<input type="hidden" name="session" value="@ViewData["session"]" />
+<input type="hidden" name="fkey" value="@Current.XSRFToken" />
+<input type="submit" class="orange" value="Confirm" />
+</form>
+

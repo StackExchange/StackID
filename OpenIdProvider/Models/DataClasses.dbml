@@ -5,10 +5,10 @@
       <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
       <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
       <Column Name="LastActivityDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
-      <Column Name="EmailHash" Type="System.String" DbType="NVARCHAR(36) NOT NULL" CanBeNull="false" />
+      <Column Name="EmailHash" Type="System.String" DbType="NVARCHAR(32) NOT NULL" CanBeNull="false" />
       <Column Name="EmailSaltVersion" Type="System.Byte" DbType="tinyint NOT NULL" CanBeNull="false" />
-      <Column Name="PasswordHash" Type="System.String" DbType="NVARCHAR(36) NOT NULL" CanBeNull="false" />
-      <Column Name="PasswordSalt" Type="System.String" DbType="NVARCHAR(24) NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordHash" Type="System.String" DbType="NVARCHAR(32) NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordSalt" Type="System.String" DbType="NVARCHAR(33) NOT NULL" CanBeNull="false" />
       <Column Name="ProviderId" Type="System.Guid" DbType="UNIQUEIDENTIFIER NOT NULL" CanBeNull="false" />
       <Column Name="SessionHash" Type="System.String" DbType="NVARCHAR(28) NULL" CanBeNull="true" />
       <Column Name="SessionCreationDate" Type="System.DateTime" DbType="DATETIME NULL" CanBeNull="true" />
@@ -77,8 +77,8 @@
       <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
       <Column Name="AuthCode" Type="System.String" DbType="NVARCHAR(28) NOT NULL" CanBeNull="false" />
       <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
-      <Column Name="PasswordHash" Type="System.String" DbType="NVARCHAR(36) NOT NULL" CanBeNull="false" />
-      <Column Name="PasswordSalt" Type="System.String" DbType="NVARCHAR(24) NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordHash" Type="System.String" DbType="NVARCHAR(32) NOT NULL" CanBeNull="false" />
+      <Column Name="PasswordSalt" Type="System.String" DbType="NVARCHAR(33) NOT NULL" CanBeNull="false" />
       <Column Name="DeletionDate" Type="System.DateTime" DbType="DATETIME NULL" CanBeNull="true" />
     </Type>
   </Table>
@@ -99,6 +99,14 @@
       <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
       <Column Name="ExpirationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
       <Column Name="Reason" Type="System.String" DbType="NVARCHAR(400) NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="UserSiteAuthorizations" Member="UserSiteAuthorizations">
+    <Type Name="UserSiteAuthorization">
+      <Column Name="Id" Type="System.Int32" DbType="INT NOT NULL PRIMARY KEY IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="UserId" Type="System.Int32" DbType="INT NOT NULL" CanBeNull="false" />
+      <Column Name="CreationDate" Type="System.DateTime" DbType="DATETIME NOT NULL" CanBeNull="false" />
+      <Column Name="SiteHostAddress" Type="System.String" DbType="NVARCHAR(255) NOT NULL" CanBeNull="false" />
     </Type>
   </Table>
 </Database>

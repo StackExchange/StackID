@@ -78,11 +78,6 @@ namespace OpenIdProvider.Helpers
         /// </summary>
         public static void SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
         {
-#if DEBUG
-            if (!(to.EndsWith("@stackexchange.com") || to.EndsWith("@stackoverflow.com")))
-                throw new InvalidOperationException("Only e-mail SOIS employees for now.");
-#endif
-
             string subject, textMessage;
             var htmlMessage = GetEmailText(Enum.GetName(typeof(Template), templateName), @params, out subject, out textMessage);
 

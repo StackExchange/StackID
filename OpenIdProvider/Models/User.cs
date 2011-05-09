@@ -247,6 +247,37 @@ namespace OpenIdProvider.Models
         }
 
         /// <summary>
+        /// Returns true if this user has already granted authorization to the given host,
+        /// and should thus not be prompted to confirm login.
+        /// </summary>
+        public bool HasGrantedAuthorization(string host)
+        {
+            var db = Current.ReadDB;
+            
+            return db.UserSiteAuthorizations.Any(u => u.UserId == this.Id && u.SiteHostAddress == host);
+        }
+
+        /// <summary>
+        /// Grants authorization to the given host, such
+        /// that subsequent calls to HasGrantedAuthorization with the same host
+        /// will return true.
+        /// </summary>
+        public void GrantAuthorization(string host)
+        {
+            var db = Current.WriteDB;
+
+            var newGrant = new UserSiteAuthorization
+            {
+                CreationDate = Current.Now,
+                SiteHostAddress = host,
+                UserId = this.Id
+            };
+
+            db.UserSiteAuthorizations.InsertOnSubmit(newGrant);
+            db.SubmitChanges();
+        }
+
+        /// <summary>
         /// Get the most recent activity of this user.
         /// </summary>
         public List<UserHistory> GetHistory(int mostRecentN = 30)
