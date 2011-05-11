@@ -85,7 +85,7 @@ namespace OpenIdProvider.Controllers
                         Q = Convert.ToBase64String(key.Q)
                     });
 
-            Email.SendEmail(
+            Current.Email.SendEmail(
                 Current.LoggedInUser.Email,
                 Email.Template.AffiliateRegistered,
                 new

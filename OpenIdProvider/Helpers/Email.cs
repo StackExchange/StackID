@@ -11,12 +11,25 @@ using System.Text;
 namespace OpenIdProvider.Helpers
 {
     /// <summary>
+    /// When dealing with multiple concrete Email implementations,
+    /// Current will use this attribute to determine which one to actually instantiate.
+    /// 
+    /// The highest priority (where 2 has a higher priority than 1) wins.
+    /// </summary>
+    public class PriorityAttribute : Attribute
+    {
+        public int Priority { get; set; }
+
+        public PriorityAttribute(int priority) { Priority = priority; }
+    }
+
+    /// <summary>
     /// Helper class for sending e-mails.
     /// 
     /// Abstracts away all the nasty SMTP and
     /// message formatting non-sense.
     /// </summary>
-    public class Email
+    public abstract class Email
     {
         public enum Template
         {
@@ -25,31 +38,6 @@ namespace OpenIdProvider.Helpers
             CompleteRegistrationViaAffiliate,
             PasswordChanged,
             ResetPassword
-        }
-
-        private static SmtpClient Client = new SmtpClient();
-
-        // Rather than have this be a site setting, lets just infer it
-        //   Might need to change it later, but configs are death by a thousand
-        //   cuts in an OSS project.
-        private static string _from;
-        private static string FromEmailAddress
-        {
-            get
-            {
-                if (_from != null) return _from;
-
-                NetworkCredential creds;
-
-                lock (Client)
-                {
-                    creds = Client.Credentials.GetCredential(Client.Host, Client.Port, Client.DeliveryMethod.ToString());
-
-                    _from = creds.UserName + "@" + Current.AppRootUri.Host;
-                }
-
-                return _from;
-            }
         }
 
         /// <summary>
@@ -70,45 +58,33 @@ namespace OpenIdProvider.Helpers
         }
 
         /// <summary>
-        /// Sends a raw (text/plain) e-mail.
-        /// 
-        /// to, from, subject, and message must be set and singular.
+        /// Sends am e-mail.
         /// 
         /// cc and bcc accept semi-colon delimitted lists of addresses.
         /// </summary>
-        public static void SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
+        public void SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
         {
+            var ccList = new List<string>();
+            var bccList = new List<string>();
+
+            if (cc.HasValue()) ccList.AddRange(cc.Split(';'));
+            if (bcc.HasValue()) bccList.AddRange(bcc.Split(';'));
+
             string subject, textMessage;
             var htmlMessage = GetEmailText(Enum.GetName(typeof(Template), templateName), @params, out subject, out textMessage);
 
-            var msg = new MailMessage();
-            msg.To.Add(new MailAddress(to));
-            msg.Subject = subject;
-            msg.Body = textMessage;
-            msg.From = new MailAddress(FromEmailAddress);
-            msg.IsBodyHtml = false;
-
-            // It may seem odd for the HTML (the intended primary view) to be an alternate view
-            //    But trust me, it has to be.  Most viewers grab the *last* thing in the message to display,
-            //    GMail for instance, so a "primary" html view will get overridden by an alternate text/plain one.
-            msg.AlternateViews.Add(new AlternateView(new MemoryStream(Encoding.UTF8.GetBytes(htmlMessage)), "text/html"));
-
-            if (cc.HasValue())
-            {
-                foreach (var c in cc.Split(';'))
-                    msg.CC.Add(new MailAddress(c));
-            }
-
-            if (bcc.HasValue())
-            {
-                foreach (var bc in bcc.Split(';'))
-                    msg.Bcc.Add(new MailAddress(bc));
-            }
-
-            lock (Client)
-            {
-                Client.Send(msg);
-            }
+            SendEmailImpl(to, ccList, bccList, subject, htmlMessage, textMessage);
         }
+
+        /// <summary>
+        /// Actual implementation of sending an e-mail.
+        /// 
+        /// Concrete implementations of this method must be thread safe.
+        /// 
+        /// This whole song and dance is to enable complete different implementations of email
+        /// to be swapped out easily.  SE Inc. relies on some third-party, closed source, mailing
+        /// libraries.
+        /// </summary>
+        protected abstract void SendEmailImpl(string to, IEnumerable<string> cc, IEnumerable<string> bcc, string title, string bodyHtml, string bodyText);
     }
 }

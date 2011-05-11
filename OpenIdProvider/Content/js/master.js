@@ -96,7 +96,6 @@ var help = function () {
         var actualOverlay = jText.prev(".actual-edit-overlay");
 
         if (actualOverlay.length == 0) {
-
             var helpText = findHelpOverlay(jText).text();
 
             actualOverlay = jText.clone().attr("class", "actual-edit-overlay").attr("name", null).attr("id", null).attr("disabled", "disabled").val(helpText).css({
@@ -116,9 +115,12 @@ var help = function () {
 
             actualOverlay.insertBefore(jText);
 
-            // layout correction
             actualOverlay.css("margin-left", "0px");
-            actualOverlay.css("margin-top", "2px");
+
+            // layout correction for chrome/safari
+            if ($.browser.webkit) {
+                actualOverlay.css("margin-top", "2px");
+            }
         }
     }
 
@@ -160,10 +162,6 @@ var password = function () {
     var error = $('<tr><td></td><td><div class="pw-error"></div></td></tr>');
     var error2 = $('<tr><td></td><td><div class="pw-error">Passwords do not match.</div></td></tr>');
 
-    var disableForm = function () {
-        $('input[type="submit"]').attr('disabled', 'true');
-    };
-
     var enableForm = function () {
         $('input[type="submit"]').removeAttr('disabled');
     };
@@ -172,11 +170,10 @@ var password = function () {
     var mustMatch = function () {
         error2.detach();
 
-        if (password.val().length == 0) { disableForm(); return; }
+        if (password.val().length == 0) { return; }
 
         if (password.val() != password2.val()) {
             password2.parents('tr').after(error2);
-            disableForm();
 
             return;
         }
@@ -208,7 +205,7 @@ var password = function () {
 
         var pw = password.val().toLowerCase();
 
-        if (pw.length == 0) { disableForm(); return; }
+        if (pw.length == 0) { return; }
 
         var hasLower = _hasLowerCase.test(password.val());
         var hasUpper = _hasUpperCase.test(password.val());
@@ -235,7 +232,6 @@ var password = function () {
             error.find('.pw-error').text(nag);
 
             password.parents('tr').after(error);
-            disableForm();
             return;
         }
 
@@ -243,7 +239,6 @@ var password = function () {
             error.find('.pw-error').text('Cannot match your account name.');
 
             password.parents('tr').after(error);
-            disableForm();
             return;
         }
 
@@ -251,7 +246,6 @@ var password = function () {
             error.find('.pw-error').text('Cannot match your vanity identifier.');
 
             password.parents('tr').after(error);
-            disableForm();
             return;
         }
 
@@ -263,7 +257,6 @@ var password = function () {
             error.find('.pw-error').text('Must contain at least ' + remaining + ' more unique characters.');
 
             password.parents('tr').after(error);
-            disableForm();
             return;
         }
 
@@ -285,9 +278,6 @@ var password = function () {
             password.keyup(enforceRules);
             password2.keyup(enforceRules);
             if (vanity.length != 0) vanity.blur(enforceRules);
-
-            // We serve enabled, and disable in javascript for the No-Script case
-            disableForm();
         }
     };
 } ();

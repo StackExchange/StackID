@@ -139,6 +139,9 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\Email.DotNet.cs">
+      <DependentUpon>Email.cs</DependentUpon>
+    </Compile>
     <Compile Include="Helpers\Error.cs" />
     <Compile Include="Helpers\Captcha.cs" />
     <Compile Include="Helpers\Email.cs" />
@@ -155,6 +158,12 @@
       <DependentUpon>DataClasses.dbml</DependentUpon>
     </Compile>
     <Compile Include="Models\DBContext.cs" />
+    <Compile Include="Models\DBContext.MetaData.cs">
+      <DependentUpon>DBContext.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Models\DBContext.Restrictions.cs">
+      <DependentUpon>DBContext.cs</DependentUpon>
+    </Compile>
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\UserAttributeTypeId.cs" />
     <Compile Include="Models\UserHistoryTypeId.cs" />

@@ -359,5 +359,19 @@ namespace OpenIdProvider
 
             return new HtmlString(url + "?v=" + cacheBreaker);
         }
+
+        /// <summary>
+        /// Run action on each element in source.
+        /// 
+        /// Returns source for chaining purposes.
+        /// </summary>
+        public static IEnumerable<T> ForEach<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            foreach (var item in source)
+            {
+                action(item);
+            }
+            return source;
+        }
     }
 }

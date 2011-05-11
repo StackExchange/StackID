@@ -16,6 +16,18 @@ namespace OpenIdProvider.Controllers
             return new EmptyResult();
         }
 
+        [Route("404")]
+        public ActionResult NotFoundLanding()
+        {
+            return NotFound();
+        }
+
+        [Route("error")]
+        public ActionResult Error()
+        {
+            return IrrecoverableError("An error occurred on the server", "This event has been recorded.");
+        }
+
         [Route("")]
         public ActionResult Index()
         {

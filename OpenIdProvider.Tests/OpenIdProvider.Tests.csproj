@@ -61,6 +61,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.Web.Extensions">
@@ -74,6 +75,7 @@
   <ItemGroup>
     <Compile Include="AuthCodeTests.cs" />
     <Compile Include="AffiliateTests.cs" />
+    <Compile Include="RestrictionsTests.cs" />
     <Compile Include="ErrorTests.cs" />
     <Compile Include="SanitizeTests.cs" />
     <Compile Include="PasswordTests.cs" />

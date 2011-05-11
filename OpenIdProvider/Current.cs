@@ -112,6 +112,48 @@ namespace OpenIdProvider
             }
         }
 
+        private static Lazy<Email> EmailCached = new Lazy<Email>(InitEmail);
+        /// <summary>
+        /// Common accessor for an e-mail instance.
+        /// </summary>
+        public static Email Email
+        {
+            get 
+            {
+                return EmailCached.Value;
+            }
+        }
+
+        /// <summary>
+        /// Initialize an Email instance.
+        /// This provides the value (via Lazy) for EmailCached.
+        /// </summary>
+        private static Email InitEmail()
+        {
+            var emailImpls =
+                from t in Assembly.GetExecutingAssembly().GetTypes()
+                where t.IsSubclassOf(typeof(Email)) && !t.IsAbstract
+                select t;
+
+            var email =
+                emailImpls.OrderByDescending(
+                    e =>
+                    {
+                        var priority = e.GetCustomAttributes(typeof(PriorityAttribute), false);
+
+                        if (priority.Length == 0) return Int32.MinValue;
+
+                        return ((PriorityAttribute)priority.ElementAt(0)).Priority;
+                    }
+                ).First();
+
+            var constructor = email.GetConstructor(new Type[0]);
+
+            if (constructor == null) throw new Exception("No parameter-less constructor for " + email.FullName + " found");
+
+            return (Email)constructor.Invoke(new object[0]);
+        }
+
         /// <summary>
         /// The name of the cookie used to identify a logged in user.
         /// </summary>

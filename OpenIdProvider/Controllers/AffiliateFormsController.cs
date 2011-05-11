@@ -364,7 +364,7 @@ namespace OpenIdProvider.Controllers
 
             var completeLink = Current.Url(complete.Url);
 
-            Email.SendEmail(
+            Current.Email.SendEmail(
                 email,
                 Email.Template.CompleteRegistrationViaAffiliate,
                 new {

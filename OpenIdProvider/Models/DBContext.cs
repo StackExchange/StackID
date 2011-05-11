@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Reflection;
+using System.ComponentModel.DataAnnotations;
 
 namespace OpenIdProvider.Models
 {
     public partial class DBContext
     {
-        private static MemberInfo UserType { get; set; }
+        private static Restrictions Restrictions = new Restrictions();
+
+        /*private static MemberInfo UserType { get; set; }
         private static MemberInfo DeletionDate { get; set; }
 
         static DBContext()
@@ -17,7 +20,7 @@ namespace OpenIdProvider.Models
             //    code after a schema change
             UserType = typeof(User).GetMember("UserTypeId", MemberTypes.Property, BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public)[0];
             DeletionDate = typeof(PendingUser).GetMember("DeletionDate", MemberTypes.Property, BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public)[0];
-        }
+        }*/
 
         /// <summary>
         /// This is a bit of a hack, but there are some special places
@@ -52,7 +55,6 @@ namespace OpenIdProvider.Models
             }
         }
 
-        // TODO: This has got to be refactor to be declarative, this method has become insane
         public override void SubmitChanges(System.Data.Linq.ConflictMode failureMode)
         {
             if (!RestrictToCurrentUserAttributes)
@@ -61,52 +63,20 @@ namespace OpenIdProvider.Models
                 return;
             }
 
-            var pendingChanges = GetChangeSet();
-
-            if (pendingChanges.Deletes.Any(d => d.GetType() != typeof(PendingUser)))
-                throw new InvalidOperationException("Cannot delete non-PendingUsers rows with this restricted connection");
-
             var permittedUserIds = new List<int>();
             if (Current.LoggedInUser != null)
                 permittedUserIds.Add(Current.LoggedInUser.Id);
             if (LiftUserRestrictionsOnId.HasValue)
                 permittedUserIds.Add(LiftUserRestrictionsOnId.Value);
 
-            if (pendingChanges.Inserts.Count > 0)
+            // new inserts on User.Id should be allowed, everything else is an FK where this would be invalid
+            permittedUserIds.Add(default(int));
+
+            string error;
+            if (!Restrictions.IsValidChangeSet(this, permittedUserIds, out error))
             {
-                // Only allow inserts to the UserHistory table
-                if (pendingChanges.Inserts.Any(t => t.GetType() != typeof(UserHistory) && t.GetType() != typeof(User) && t.GetType() != typeof(UserAttribute) && t.GetType() != typeof(UserSiteAuthorization)))
-                    throw new InvalidOperationException("Cannot insert any records except new users, new attributes, new user site authorizations, and new user histories");
-
-                // Only allow inserts of new records if they refer to the currently logged in user or the user being created
-                if (pendingChanges.Inserts.OfType<UserHistory>().Any(h => !permittedUserIds.Contains(h.UserId)) ||
-                    pendingChanges.Inserts.OfType<UserAttribute>().Any(a => !permittedUserIds.Contains(a.UserId)) ||
-                    pendingChanges.Inserts.OfType<UserSiteAuthorization>().Any(au => !permittedUserIds.Contains(au.UserId)))
-                        throw new InvalidOperationException("Cannot insert any history records except for the currently logged in user");
+                throw new InvalidOperationException(error);
             }
-
-            // Only allow Updates to UserAttributes and User rows
-            if (pendingChanges.Updates.Any(t => t.GetType() != typeof(UserAttribute) && t.GetType() != typeof(User) && t.GetType() != typeof(PendingUser)))
-                throw new InvalidOperationException("This connection can only be used for spot updates of UserAttributes, PendingUsers & Users");
-
-            // Only allow updates to rows keyed off the current user
-            if (pendingChanges.Updates.OfType<UserAttribute>().Any(a => 
-                {
-                    return permittedUserIds.Contains(a.UserId) || 
-                        pendingChanges.Updates.OfType<User>().Any(u => permittedUserIds.Contains(u.Id));
-                }))
-                throw new InvalidOperationException("This connection can only be used for spot updates of UserAttributes and User rows owned by the currently logged in user");
-
-            // Don't allow updates to User.UserTypeId
-            if (pendingChanges.Updates.OfType<User>().Any(u => 
-                    {
-                        var modified = this.Users.GetModifiedMembers(u);
-                        return modified.Any(m => m.Member == UserType) && !permittedUserIds.Contains(u.Id);
-                    }))
-                throw new InvalidOperationException("This connection cannot be used to modify a User.UserTypeId column");
-
-            if (pendingChanges.Updates.OfType<PendingUser>().Any(u => this.PendingUsers.GetModifiedMembers(u).Any(m => m.Member != DeletionDate)))
-                throw new InvalidOperationException("This connection cannot be used to modify anything other than DeletionDate on PendingUser");
 
             base.SubmitChanges(failureMode);
         }

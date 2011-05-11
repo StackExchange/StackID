@@ -148,7 +148,7 @@ namespace OpenIdProvider.Controllers
 
             var completeLink = Current.Url(toComplete.Url);
 
-            Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink });
+            Current.Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink });
 
             return Success("Registration E-mail Sent", "Check your e-mail for the link to complete your registration");
         }
@@ -240,7 +240,7 @@ namespace OpenIdProvider.Controllers
 
             var resetLink = Current.Url(toReset.Url);
 
-            Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink });
+            Current.Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink });
 
             return Success("Password Recovery E-mail Sent", "Check your e-mail for the link to reset your password.");
         }
@@ -292,7 +292,7 @@ namespace OpenIdProvider.Controllers
             Current.WriteDB.PasswordResets.DeleteOnSubmit(t);
             Current.WriteDB.SubmitChanges();
 
-            Email.SendEmail(user.Email, Email.Template.PasswordChanged);
+            Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged);
 
             user.Login(now);
 
