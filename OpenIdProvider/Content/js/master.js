@@ -98,7 +98,7 @@ var help = function () {
         if (actualOverlay.length == 0) {
             var helpText = findHelpOverlay(jText).text();
 
-            actualOverlay = jText.clone().attr("class", "actual-edit-overlay").attr("name", null).attr("id", null).attr("disabled", "disabled").val(helpText).css({
+            actualOverlay = jText.clone().attr("class", "actual-edit-overlay").removeAttr("name").removeAttr("id").attr("disabled", "disabled").val(helpText).css({
                 position: "absolute",
                 backgroundColor: "white", // disabled: disabled causes a different color in most browsers
                 color: "black",

@@ -110,14 +110,27 @@ namespace OpenIdProvider.Controllers
             {
                 var value = Request.Form[p];
 
-                if (p == "real_name")
+                if (p == "realname")
                 {
                     var old = toUpdate.RealName;
                     if (old == value || (old.IsNullOrEmpty() && value.IsNullOrEmpty())) continue;
 
                     var hadPreviously = old.HasValue();
 
-                    toUpdate.UpdateAttribute(value.IsNullOrEmpty() ? null : value, UserAttributeTypeId.RealName);
+                    string errorMessage;
+                    if (!toUpdate.UpdateAttribute(value.IsNullOrEmpty() ? null : value, UserAttributeTypeId.RealName, out errorMessage))
+                    {
+                        if (Current.LoggedInUser.Id == toUpdate.Id)
+                        {
+                            return RecoverableError(errorMessage, new { });
+                        }
+                        else
+                        {
+                            // Hack: URL structure means administrators cannot *really* recover from this error.
+                            return IrrecoverableError("Admin edit failed", errorMessage);
+                        }
+
+                    }
 
                     string comment = "Changed";
                     if (hadPreviously && value.IsNullOrEmpty()) comment = "Removed";
@@ -143,9 +156,9 @@ namespace OpenIdProvider.Controllers
 
                     var hadPreviously = old.HasValue();
 
-                    if (value.HasValue() && !Models.User.ValidVanityId(value)) return RecoverableError("Invalid Vanity OpenId", new { real_name = Request.Form["real_name"], vanity = value });
+                    if (value.HasValue() && !Models.User.ValidVanityId(value)) return RecoverableError("Invalid Vanity OpenId", new { realname = Request.Form["realname"], vanity = value });
 
-                    if (value.HasValue() && db.Users.Any(u => u.VanityProviderId == value)) return RecoverableError("That Vanity OpenId is already in use", new { real_name = Request.Form["real_name"], vanity = value });
+                    if (value.HasValue() && db.Users.Any(u => u.VanityProviderId == value)) return RecoverableError("That Vanity OpenId is already in use", new { realname = Request.Form["realname"], vanity = value });
 
                     toUpdate.VanityProviderId = value.IsNullOrEmpty() ? null : value;
 

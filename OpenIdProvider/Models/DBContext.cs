@@ -35,7 +35,7 @@ namespace OpenIdProvider.Models
 
         private int? unrestrictedUserId;
         /// <summary>
-        /// Continueing the hack.
+        /// Continuing the hack.
         /// 
         /// Sometimes we want fair game on a single user id (such as during registration).
         /// 

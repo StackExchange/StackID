@@ -17,36 +17,36 @@
         <table class="position-table">
             <tr>
                 <td>
-                    Email
+                    <label for="email">Email</label>
                 </td>
                 <td>
-                    <input type="text" name="email" value="@ViewData["email"]" />
-                    <span class="form-help">A valid e-mail address.</span>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    Name
-                </td>
-                <td>
-                    <input name="realname" type="text" value="@ViewData["realname"]" />
-                    <span class="form-help">Optionally, your real name.</span>
+                    <input type="text" name="email" id="email" value="@ViewData["email"]" />
+                    <span class="form-help">A valid e-mail address</span>
                 </td>
             </tr>
             <tr>
                 <td>
-                    Password
+                    <label for="realname">Name</label>
                 </td>
                 <td>
-                    <input name="password" type="password" />
+                    <input type="text" name="realname" id="realname" value="@ViewData["realname"]" />
+                    <span class="form-help">Optionally, your real name</span>
                 </td>
             </tr>
             <tr>
                 <td>
-                    Again
+                    <label for="password">Password</label>
                 </td>
                 <td>
-                    <input name="password2" type="password" />
+                    <input type="password" name="password" id="password" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="password2">Again</label>
+                </td>
+                <td>
+                    <input type="password" name="password2" id="password2" />
                 </td>
             </tr>
             <tr>

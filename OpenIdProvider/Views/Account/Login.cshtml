@@ -18,18 +18,18 @@
             <table class="position-table">
                 <tr>
                     <td>
-                        Email
+                        <label for="email">Email</label>
                     </td>
                     <td>
-                        <input type="text" name="email" value="@ViewData["email"]" />
+                        <input type="text" name="email" id="email" value="@ViewData["email"]" />
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        Password
+                        <label for="password">Password</label>
                     </td>
                     <td>
-                        <input type="password" name="password" />
+                        <input type="password" name="password" id="password" />
                     </td>
                 </tr>
             </table>
@@ -44,5 +44,9 @@
         }
 
         <input type="submit" class="orange" value="Login" />
+
+        <br />
+        <br />
+        <a href="/account/recovery">Forgot your password?</a>
     </form>
 </div>

@@ -13,6 +13,7 @@ namespace OpenIdProvider.Controllers
 #if (DEBUG  && !DEBUG_HTTP)
     [RequireHttps]
 #endif
+    [ValidateInput(false)]
     public class ControllerBase : Controller
     {
         protected override void OnActionExecuting(ActionExecutingContext filterContext)

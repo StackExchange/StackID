@@ -16,7 +16,7 @@
         <text>
             <script type="text/javascript">common.bustFrames();</script>
 
-            @* Doesn't make sense for affiliate pages to advertise an end point, so only do it if we're frame busting *@   
+            @* Doesn't make sense for affiliate pages to advertise an end point, so only do it if we're frame busting *@
             <link rel="openid.server" href="@provider">
             <link rel="openid2.provider" href="@provider">
         </text>
@@ -39,7 +39,6 @@
                 }
             </style>
         }
-        
     }
     </head>
 <body>
@@ -51,17 +50,16 @@
                     <a id="logo" href="/"></a>
                 </div>
                 <div id="menu">
-                   @if (Current.LoggedInUser == null)
-                   {
-                       <text>
+                    @if (Current.LoggedInUser == null)
+                    {
+                        <text>
                             @Html.RenderTab("Login", "/account/login")
                             @Html.RenderTab("Register", "/account/register")
-                            @Html.RenderTab("Account Recovery", "/account/recovery")
                         </text>
-                   }
-                   else
-                   {
-                       <text>
+                    }
+                    else
+                    {
+                        <text>
                             @Html.RenderTab("Profile", "/user")
                             @Html.RenderTab("Logout", "/account/logout")
                             @*
@@ -71,11 +69,11 @@
                             *@
                         </text>
                        
-                       if (Current.LoggedInUser.IsAdministrator)
-                       {
+                        if (Current.LoggedInUser.IsAdministrator)
+                        {
                             @Html.RenderTab("Admin Tools", "/admin")
-                       }
-                   }
+                        }
+                    }
                 </div>
             </div>
         </div>

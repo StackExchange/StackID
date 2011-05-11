@@ -26,7 +26,8 @@ namespace OpenIdProvider.Models
                 // The key has changed since we looked at this record, go ahead and do a spot update
                 if (outOfDate)
                 {
-                    UpdateAttribute(email, UserAttributeTypeId.Email);
+                    string ignored;
+                    UpdateAttribute(email, UserAttributeTypeId.Email, out ignored);
                     Current.WriteDB.SubmitChanges();
                 }
 
@@ -53,7 +54,8 @@ namespace OpenIdProvider.Models
                 // The key has changed since we looked at this record, go ahead and do a spot update
                 if (outOfDate)
                 {
-                    UpdateAttribute(realName, UserAttributeTypeId.RealName);
+                    string ignored;
+                    UpdateAttribute(realName, UserAttributeTypeId.RealName, out ignored);
                     Current.WriteDB.SubmitChanges();
                 }
 
@@ -77,7 +79,7 @@ namespace OpenIdProvider.Models
         /// 
         /// Requires a subsequent call to SubmitChanges on Current.WriteDB
         /// </summary>
-        public void UpdateAttribute(string value, byte attribute)
+        public bool UpdateAttribute(string value, byte attribute, out string message)
         {
             var db = Current.WriteDB;
 
@@ -94,7 +96,8 @@ namespace OpenIdProvider.Models
                     db.UserAttributes.DeleteOnSubmit(toUpdate);
                 }
 
-                return;
+                message = null;
+                return true;
             }
 
             if (toUpdate == null)
@@ -111,10 +114,19 @@ namespace OpenIdProvider.Models
             byte version;
             var updated = Current.Encrypt(value, out iv, out version, out hmac);
 
+            if (updated.Length > 267)
+            {
+                message = UserAttributeTypeId.GetDisplayName(attribute) + " is too long.";
+                return false;
+            }
+
             toUpdate.Encrypted = updated;
             toUpdate.IV = iv;
             toUpdate.KeyVersion = version;
             toUpdate.HMAC = hmac;
+
+            message = null;
+            return true;
         }
 
         private static Regex AllowedVanityIdRegex = new Regex(@"^[a-z0-9\.]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -127,6 +139,8 @@ namespace OpenIdProvider.Models
         /// <returns></returns>
         public static bool ValidVanityId(string id)
         {
+            if (id.Length > 40) return false;
+
             if (!AllowedVanityIdRegex.IsMatch(id)) return false;
 
             var existingRoutes = RouteAttribute.GetDecoratedRoutes().Keys.Select(k => k.ToLower());
@@ -165,7 +179,36 @@ namespace OpenIdProvider.Models
             // Odds of colision are miniscule, but might as well check
             while (db.Users.Any(u => u.ProviderId == provider))
                 provider = Current.UniqueId();
-            
+
+            // We need to compute these way before we use them for some length checks
+            byte emailVersion;
+            string emailIV, emailHMAC;
+            var emailEncrypted = Current.Encrypt(email, out emailIV, out emailVersion, out emailHMAC);
+
+            byte nameVersion = 0xFF;
+            string nameEncrypted= null, nameIV = null, nameHMAC = null;
+
+            if (realname.HasValue())
+            {
+                nameEncrypted = Current.Encrypt(realname, out nameIV, out nameVersion, out nameHMAC);
+            }
+
+            if (emailEncrypted.Length > 267)
+            {
+                created = null;
+                errorMessage = "Email is too long";
+
+                return false;
+            }
+
+            if (realname.Length > 267)
+            {
+                created = null;
+                errorMessage = "Name is too long";
+
+                return false;
+            }
+
             string emailHash;
             byte emailSaltVersion;
             emailHash = Current.SystemHash(email, out emailSaltVersion);
@@ -199,10 +242,6 @@ namespace OpenIdProvider.Models
                 db.SubmitChanges();
             }
 
-            byte emailVersion;
-            string emailIV, emailHMAC;
-            var emailEncrypted = Current.Encrypt(email, out emailIV, out emailVersion, out emailHMAC);
-
             var emailAttr =
                 new UserAttribute
                 {
@@ -220,10 +259,6 @@ namespace OpenIdProvider.Models
 
             if (realname.HasValue())
             {
-                byte nameVersion;
-                string nameIV, nameHMAC;
-                var nameEncrypted = Current.Encrypt(realname, out nameIV, out nameVersion, out nameHMAC);
-
                 var nameAttr =
                     new UserAttribute
                     {

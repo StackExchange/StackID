@@ -11,19 +11,19 @@
     <table class="position-table">
         <tr>
             <td>
-                Real Name
+                <label for="realname">Real Name</label>
             </td>
             <td>
-                <input type="text" name="real_name" value="@(ViewData["real_name"] ?? Model.RealName)" />
+                <input type="text" name="realname" id="realname" value="@(ViewData["realname"] ?? Model.RealName)" />
                 <span class="form-help">Optionally, your real name.</span>
             </td>
         </tr>
         <tr>
             <td>
-                Vanity OpenId
+                <label for="vanity">Vanity OpenId</label>
             </td>
             <td>
-                <input name="vanity" type="text" value="@(ViewData["vanity"] ?? Model.VanityProviderId)" />
+                <input name="vanity" id="vanity" type="text" value="@(ViewData["vanity"] ?? Model.VanityProviderId)" />
                 <span class="form-help">Optionally, an easy to remember string for a vanity OpenId.</span>
                 <div class="form-help">
                     Optional.<br />

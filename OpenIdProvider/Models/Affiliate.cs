@@ -82,6 +82,9 @@ namespace OpenIdProvider.Models
         /// </summary>
         public static bool IsValidFilter(string filter)
         {
+            // maximum filter length in the DB
+            if (filter.Length > 100) return false;
+
             // Only alpha-numeric, '.', or '*' valid in filters
             if (!ValidFilter.IsMatch(filter)) return false;
 
