@@ -64,7 +64,7 @@ namespace OpenIdProvider.Controllers
             if (user == null || user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
             {
                 IPBanner.BadLoginAttempt(user, Current.RemoteIP);
-                return RecoverableError("Unknown e-mail or incorrect password", new { email, session });
+                return RecoverableError("Unknown email or incorrect password", new { email, session });
             }
 
             user.Login(now);
@@ -90,7 +90,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Part one of our registration process.
         /// 
-        /// Here the user provides an e-mail address for us to verify.
+        /// Here the user provides an email address for us to verify.
         /// </summary>
         [Route("account/register", AuthorizedUser.Anonymous)]
         public ActionResult Register()
@@ -103,7 +103,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Handles the submission fro /account/register
         /// 
-        /// Actually sends out a verification e-mail.
+        /// Actually sends out a verification email.
         /// </summary>
         [Route("account/register/submit", HttpVerbs.Post, AuthorizedUser.Anonymous)]
         public ActionResult SendEmailVerficationToken(string email, string password, string password2, string realname)
@@ -150,13 +150,13 @@ namespace OpenIdProvider.Controllers
 
             Current.Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink });
 
-            return Success("Registration E-mail Sent", "Check your e-mail for the link to complete your registration");
+            return Success("Registration Email Sent", "Check your email for the link to complete your registration");
         }
 
         /// <summary>
         /// Part two of our registration process.
         /// 
-        /// Getting here with a valid token/email pair means they got our e-mail,
+        /// Getting here with a valid token/email pair means they got our email,
         /// so we can trust it now.
         /// </summary>
         [Route("account/complete-registration", AuthorizedUser.Anonymous)]
@@ -206,7 +206,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Handles the submission from /account/recovery.
         /// 
-        /// Actually sends an e-mail containing a 
+        /// Actually sends an email containing a 
         /// </summary>
         /// <param name="email"></param>
         /// <returns></returns>
@@ -217,7 +217,7 @@ namespace OpenIdProvider.Controllers
 
             var user = Models.User.FindUserByEmail(email);
 
-            if (user == null) return RecoverableError("No account with that e-mail was found", new { email });
+            if (user == null) return RecoverableError("No account with that email was found", new { email });
 
             var now = Current.Now;
             var token = Current.UniqueId().ToString();
@@ -242,14 +242,14 @@ namespace OpenIdProvider.Controllers
 
             Current.Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink });
 
-            return Success("Password Recovery E-mail Sent", "Check your e-mail for the link to reset your password.");
+            return Success("Password Recovery Email Sent", "Check your email for the link to reset your password.");
         }
 
         /// <summary>
         /// Entry point for a user resetting their password.
         /// 
         /// token is a single use token that was previously sent
-        /// to a user via e-mail.
+        /// to a user via email.
         /// </summary>
         [Route("account/password-reset", AuthorizedUser.Anonymous)]
         public ActionResult NewPassword(string token)

@@ -139,7 +139,7 @@ namespace OpenIdProvider.Controllers
         /// Use when whatever we encountered needs to be communicated to the user, but we can't expect them to be able
         /// to take any action to recover from it.
         /// 
-        /// Example: whenever a user lands a page from a link in an e-mail.  If something goes wrong with validation, they can't 
+        /// Example: whenever a user lands a page from a link in an email.  If something goes wrong with validation, they can't 
         /// modify the request (since it has an auth code) nor can they go "back" and fix any fields since there is no back to go to.
         /// 
         /// This method centralizes reporting these kinds of errors, to make changes to the underlying view easier.

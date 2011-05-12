@@ -2,10 +2,10 @@
 @model System.String
 
 @{
-    ViewData["Title"] = Model + " wants you to login";
+    ViewData["Title"] = Model + " wants you to log in";
 }
 
-<p>Do you wish to send your information?</p>
+<p>Do you wish to share your information with @Model?</p>
 
 <form method="post" action="/account/prompt/submit">
 <input type="hidden" name="session" value="@ViewData["session"]" />

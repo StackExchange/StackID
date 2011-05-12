@@ -13,16 +13,16 @@
                 <td>
                     <label for="email">Email</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="text" class="framed-text-field" name="email" id="email" value="@ViewData["email"]" />
-                    <span class="form-help">A valid e-mail address.</span>
+                    <span class="form-help">A valid email address.</span>
                 </td>
             </tr>
             <tr>
                 <td>
                     <label for="realname">Name</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="text" class="framed-text-field" name="realname" id="realname" value="@ViewData["realname"]" />
                     <span class="form-help">Optionally, your real name.</span>
                 </td>
@@ -31,7 +31,7 @@
                 <td>
                     <label for="password">Password</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="password" class="framed-text-field" name="password" id="password" />
                 </td>
             </tr>
@@ -39,23 +39,26 @@
                 <td>
                     <label for="password2">Again</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="password" class="framed-text-field" name="password2" id="password2" />
                 </td>
             </tr>
             <tr>
-            <td></td>
-            <td>
-                @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
-            </td>
+                <td></td>
+                <td class="input-td">
+                    @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td class="input-td">
+                    <input type="submit" class="affiliate-button" value="Signup" />
+                </td>
             </tr>
         </table>
 
         <input type="hidden" name="background" value="@ViewData["Background"]" />
         <input type="hidden" name="color" value="@ViewData["Color"]" />
-        <div class="affiliate-button-container">
-            <input type="submit" class="affiliate-button" value="Signup" />
-        </div>
         <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
     </form>
 </div>

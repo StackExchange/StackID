@@ -114,7 +114,7 @@ namespace OpenIdProvider
 
         private static Lazy<Email> EmailCached = new Lazy<Email>(InitEmail);
         /// <summary>
-        /// Common accessor for an e-mail instance.
+        /// Common accessor for an email instance.
         /// </summary>
         public static Email Email
         {

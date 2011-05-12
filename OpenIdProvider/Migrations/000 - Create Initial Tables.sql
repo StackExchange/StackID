@@ -113,7 +113,7 @@
 
 	-- EmailHash for easy lookup (should be salted with a *system* common salt, just to make correlation difficult)
 	   -- EmailHashSalt is a copy of the system salt, so we don't have to resalt everything at once (which is potentially quite expensive)
-	-- EmailEncrypted is the users e-mail, encrypted with a system wide symmetric cipher
+	-- EmailEncrypted is the users email, encrypted with a system wide symmetric cipher
 	   -- EmailEncryptedKeyVersion is the key version used, for error recovery purposes if we ever need to re-key the database
 	   -- Note that 152 base64 chars is the # of chars needed to encoded an encrypted 100 char email
 

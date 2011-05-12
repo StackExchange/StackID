@@ -10,7 +10,7 @@ namespace OpenIdProvider.Models
     public partial class User
     {
         /// <summary>
-        /// A users (decrypted) e-mail address.
+        /// A users (decrypted) email address.
         /// 
         /// We are guaranteed to have this.  All other attributes, less so.
         /// </summary>
@@ -151,7 +151,7 @@ namespace OpenIdProvider.Models
         }
 
         /// <summary>
-        /// Create a new account given an e-mail and password
+        /// Create a new account given an email and password
         /// </summary>
         public static bool CreateAccount(string email, PendingUser pendingUser, DateTime now, string vanity, string realname, out User created, out string errorMessage)
         {
@@ -227,8 +227,18 @@ namespace OpenIdProvider.Models
                     UserTypeId = Models.UserTypeId.Normal
                 };
 
-            db.Users.InsertOnSubmit(newUser);
-            db.SubmitChanges();
+            try
+            {
+                db.Users.InsertOnSubmit(newUser);
+                db.SubmitChanges();
+            }
+            catch (Exception e)
+            {
+                Current.LogException(e);
+                created = null;
+                errorMessage = "User account could not be created.";
+                return false;
+            }
 
             // Open season on this user until the context is torn down.
             db.LiftUserRestrictionsOnId = newUser.Id;
@@ -518,7 +528,7 @@ namespace OpenIdProvider.Models
         }
 
         /// <summary>
-        /// Find a user given their e-mail.
+        /// Find a user given their email.
         /// 
         /// This user is *writable* (access via Current.WriteDB)
         /// </summary>
@@ -555,7 +565,15 @@ namespace OpenIdProvider.Models
                     user.EmailHash = newHash;
                     user.EmailSaltVersion = newSaltVersion;
 
-                    db.SubmitChanges();
+                    try
+                    {
+                        db.SubmitChanges();
+                    }
+                    catch (Exception e)
+                    {
+                        Current.LogException(new Exception("Updating email hash lead to conflict", e));
+                        // Data is still fine, continue until we can intervene manually...
+                    }
                 }
             }
 

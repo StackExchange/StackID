@@ -259,7 +259,7 @@ namespace OpenIdProvider.Controllers
         }
 
         /// <summary>
-        /// Returns a "give us your e-mail" signup form for embedding in an iframe.
+        /// Returns a "give us your email" signup form for embedding in an iframe.
         /// </summary>
         public ActionResult SignupIFrame(string onLoad, string background, string color)
         {
@@ -375,7 +375,7 @@ namespace OpenIdProvider.Controllers
             ViewData["Background"] = background;
             ViewData["Color"] = color;
 
-            return Success("Registration E-mail Sent", "Check your e-mail for the link to complete your registration.");
+            return Success("Registration Email Sent", "Check your email for the link to complete your registration.");
         }
 
         /// <summary>

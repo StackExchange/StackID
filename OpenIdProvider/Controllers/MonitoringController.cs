@@ -33,6 +33,7 @@ namespace OpenIdProvider.Controllers
         {
             var ret = new StringBuilder();
 
+#if DEBUG
             ret.AppendFormat("IP: {0}\r\nTime: {1}\r\n\r\n", Current.RemoteIP, Current.Now);
 
             ret.AppendLine("Headers:");
@@ -48,6 +49,7 @@ namespace OpenIdProvider.Controllers
                     string.Join("", header.Select(h => h))
                 );
             }
+#endif
 
             return
                 new ContentResult

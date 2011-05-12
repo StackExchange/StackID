@@ -156,10 +156,10 @@ namespace OpenIdProvider.Helpers
         }
 
         /// <summary>
-        /// Gives a black mark to an IP for sending a recovery e-mail.
+        /// Gives a black mark to an IP for sending a recovery email.
         /// 
         /// We want to cut these off after a while (faster in the face of other "iffy" behavior) since you can
-        /// use recovery e-mail error messages as a ghetto way to scan for usernames (registered e-mail addresses).
+        /// use recovery email error messages as a ghetto way to scan for usernames (registered email addresses).
         /// </summary>
         public static void AttemptedToSendRecoveryEmail(string ip)
         {

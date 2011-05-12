@@ -139,6 +139,8 @@ namespace OpenIdProvider.Controllers
 
             if (!Current.LoggedInUser.HasGrantedAuthorization(authRequest.Realm.Host))
             {
+                session = CreationSession(authRequest);
+
                 return
                     SafeRedirect(
                         (Func<string, ActionResult>)(new AccountController()).PromptForAuthorization,

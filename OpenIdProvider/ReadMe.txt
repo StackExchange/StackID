@@ -1,11 +1,50 @@
-﻿Long, Boring, Security Discussion
+﻿Setup
+=====
+
+1. Setup a database
+   - We assume SQL Server 2008 R2, although we aren't using anything too fancy so you might get away with something else.
+   - Run make-db-build-script.bat in \OpenIdProvider\Migrations\ to create a build.sql file
+   - Create a new database in SSMS and run build.sql on it.
+2. Configure Web.config
+   - ReadConnectionString should specify a connection to the new database with *READ ONLY* permissions
+   - WriteConnectionString should specify a connection to the new database with *READ AND WRITE* permissions
+   - KeyStore can be ignored for now, we'll get back to it
+   - SiteName can be anything
+   - ReCaptchaPublicKey & ReCaptchaPrivateKey need to be obtained from http://www.google.com/recaptcha
+   - HashIterations is the "work factor" for password hashing, it can be changed at anytime and the system will recover gracefully.
+   - Configure <mailSettings> section (see: http://msdn.microsoft.com/en-us/library/w355a94k.aspx), basically any SMTP mail server should be fine.
+     * No fancy signing options are supported
+3. Setup the site in IIS
+   - WebDev will not work, as StackID plays some header games
+4. Generate a new key file
+   - run StackID under either DEBUG build, and hit /admin/key-gen
+   - place the result in a json array, tweak the version # down (0 is the lowest acceptable id, and generally what you want to setup with)
+   - save the result into a text file
+   - place the full path to the file into KeyStore
+     * Note, on a production system KeyStore should be on a *heavily monitored* share not a web tier machine
+5. Sign up for an account
+6. Flip the UserTypeId to 2 on your new (and now administrative) account via SSMS (or some other direct SQL query)
+   - We intentionally don't set this field via code anywhere, so setting up an admin account is a bit painfull... by design.
+
+SSL Notes
+=========
+
+If you're using an accelerator (Stack Exchange Inc. uses nginx, http://nginx.org/) you can configure StackID to use it.
+
+In Web.config add an appSetting key LoadBalancerIP with your load balancer IP address.
+ * ex: <add key="LoadBalancerIP" value="127.0.0.1" />
+
+Configure your load balancer to place the "X-Forwarded-Proto" header on incoming requests with a value of "https".
+ * This isn't super flexible, but... well, SSL acceleration isn't super flexible either.
+
+Long, Boring, Security Discussion
 =================================
 
 The overriding principle of this project is that no single failure should be catastrophic, ie. defense in depth.
 Where possible, we're making it very hard to do the wrong thing in the code.
 
 Things worth protecting:
- - e-mail addresses
+ - email addresses
  - user attributes (real names, etc.)
  - passwords
 
@@ -33,7 +72,7 @@ Tricks
    We're protected from LINQ bugs/attacks to a small degree by our distinct connection strings (#1).
 
    There is a bit of loss on perf, but in the name of security its acceptable.  We have the option
-   of tightening it up some compiled queries.
+   of tightening it up some with compiled queries.
 
 3. No token storage
    Excluding values that need to be recoverable (User.ProviderId, primarily) nothing for which
@@ -52,7 +91,7 @@ Tricks
 
 4. Database independent encryption
    Sensitive values that need to be recovered (ie. NOT passwords) are encrypted using keys stored outside
-   the database.  Some examples of these values would be e-mail addresses (required) and users' real names
+   the database.  Some examples of these values would be email addresses (required) and users' real names
    (optional).
 
    Storing these values *in* the database would be pointless, so they are held on a separate filesystem.
@@ -67,3 +106,5 @@ Tricks
    we include some provisions for that case.
 
    This effectively eliminates the possibility of Man in the Middle Attacks.
+
+   Note that a Debug_HTTP build configuration exists for development purposes, but SSL is expected (or an SSL accelerator) for all Release builds.

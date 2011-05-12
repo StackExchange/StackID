@@ -24,7 +24,7 @@ namespace OpenIdProvider.Helpers
     }
 
     /// <summary>
-    /// Helper class for sending e-mails.
+    /// Helper class for sending emails.
     /// 
     /// Abstracts away all the nasty SMTP and
     /// message formatting non-sense.
@@ -41,7 +41,7 @@ namespace OpenIdProvider.Helpers
         }
 
         /// <summary>
-        /// Returns an e-mail template, with all the {Names} replaced with the corresponding properties on params and some
+        /// Returns an email template, with all the {Names} replaced with the corresponding properties on params and some
         /// default "SiteWide" ones like {SiteName}.
         /// 
         /// Also pushes an appropriate subject into subject.
@@ -58,9 +58,9 @@ namespace OpenIdProvider.Helpers
         }
 
         /// <summary>
-        /// Sends am e-mail.
+        /// Sends an email.
         /// 
-        /// cc and bcc accept semi-colon delimitted lists of addresses.
+        /// cc and bcc accept semicolon delimited lists of addresses.
         /// </summary>
         public void SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
         {
@@ -77,7 +77,7 @@ namespace OpenIdProvider.Helpers
         }
 
         /// <summary>
-        /// Actual implementation of sending an e-mail.
+        /// Actual implementation of sending an email.
         /// 
         /// Concrete implementations of this method must be thread safe.
         /// 

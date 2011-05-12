@@ -14,20 +14,24 @@
     @if (realName != null)
     {
         <text>
-            <span class="user-attribute">Real Name</span>: <span class="real-name">@realName</span><br />
+            <div class="user-attribute">Real Name</div>
+            <div class="user-attribute-value real-name">@realName</div>
         </text>
     }
 
-    <span class="user-attribute">Last Seen</span>: @lastActivity.ToRelativeTimeSpan()<br />
+    <div class="user-attribute">Last Seen</div>
+    <div class="user-attribute-value">@lastActivity.ToRelativeTimeSpan()</div>
 
     @if (Model.VanityProviderId.HasValue())
     {
         var vanityUrl = Model.GetVanityClaimedIdentifier().AbsoluteUri;
         <text>
-        <span class="user-attribute">Vanity Id</span>: <a href="@vanityUrl">@vanityUrl</a><br />
+        <div class="user-attribute">Vanity Id</div>
+        <div class="user-attribute-value"><a href="@vanityUrl">@vanityUrl</a></div>
         </text>
     }
 
+    <div class="edit-profile">
     @if (Current.LoggedInUser.IsAdministrator)
     {
         <a href="/user/@(Model.ProviderId)/edit">Edit Profile</a>
@@ -36,6 +40,7 @@
     {
         <a href="/user/edit">Edit Profile</a>
     }
+    </div>
 </div>
 
 <div class="user-history">

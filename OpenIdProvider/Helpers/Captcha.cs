@@ -24,6 +24,7 @@ namespace OpenIdProvider.Helpers
         {
             var captcha = new Recaptcha.RecaptchaControl();
             captcha.OverrideSecureMode = true;
+            captcha.Theme = "clean";
 
             writer.Write(@"<div class=""captcha"">");
             writer.Write(captcha.RenderControl());

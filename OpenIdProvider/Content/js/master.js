@@ -96,7 +96,10 @@ var help = function () {
         var actualOverlay = jText.prev(".actual-edit-overlay");
 
         if (actualOverlay.length == 0) {
-            var helpText = findHelpOverlay(jText).text();
+            var helpText = $.trim(findHelpOverlay(jText).text());
+
+            // add a space so the cursor doesn't look weird clipping through the help text
+            helpText = ' ' + helpText;
 
             actualOverlay = jText.clone().attr("class", "actual-edit-overlay").removeAttr("name").removeAttr("id").attr("disabled", "disabled").val(helpText).css({
                 position: "absolute",

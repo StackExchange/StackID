@@ -8,7 +8,7 @@
 
 <div>
     <p>
-        Enter a valid e-mail, and solve the captcha, and we'll send you a link to create an account.
+        Enter a valid email and solve the CAPTCHA, and we'll send you a link to create an account.
     </p>
 </div>
 
@@ -19,16 +19,16 @@
                 <td>
                     <label for="email">Email</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="text" name="email" id="email" value="@ViewData["email"]" />
-                    <span class="form-help">A valid e-mail address</span>
+                    <span class="form-help">A valid email address</span>
                 </td>
             </tr>
             <tr>
                 <td>
                     <label for="realname">Name</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="text" name="realname" id="realname" value="@ViewData["realname"]" />
                     <span class="form-help">Optionally, your real name</span>
                 </td>
@@ -37,7 +37,7 @@
                 <td>
                     <label for="password">Password</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="password" name="password" id="password" />
                 </td>
             </tr>
@@ -45,19 +45,24 @@
                 <td>
                     <label for="password2">Again</label>
                 </td>
-                <td>
+                <td class="input-td">
                     <input type="password" name="password2" id="password2" />
                 </td>
             </tr>
             <tr>
                 <td></td>
-                <td>
+                <td class="input-td">
                     @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td class="input-td">
+                    <input type="submit" class="orange" value="Send Confirmation Email" />
                 </td>
             </tr>
         </table>
 
     <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
-    <input type="submit" class="orange" value="Send Confirmation Email" />
     </form>
 </div>
