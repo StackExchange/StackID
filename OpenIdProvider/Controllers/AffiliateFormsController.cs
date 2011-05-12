@@ -148,9 +148,6 @@ namespace OpenIdProvider.Controllers
 
             if (!int.TryParse(@params["affId"], out affId))
             {
-#if DEBUG
-                Current.LogException(new Exception("No Affiliate Id"));
-#endif
                 return false;
             }
 
@@ -158,11 +155,6 @@ namespace OpenIdProvider.Controllers
 
             if (!Nonces.IsValid(nonce))
             {
-#if DEBUG
-                DateTime created;
-                Nonces.Parse(nonce, out created);
-                Current.LogException(new Exception("Invalid nonce, claims creation of [" + created + "]"));
-#endif
                 return false;
             }
 
@@ -170,9 +162,6 @@ namespace OpenIdProvider.Controllers
 
             if (affiliate == null)
             {
-#if DEBUG
-                Current.LogException(new Exception("Could not find affiliate"));
-#endif
                 return false;
             }
 
@@ -184,9 +173,6 @@ namespace OpenIdProvider.Controllers
 
             if (authCode.HasValue() && !affiliate.ConfirmSignature(authCode, Current.RequestUri.AbsolutePath, copy))
             {
-#if DEBUG
-                Current.LogException(new Exception("Invalid signature"));
-#endif
                 return false;
             }
 

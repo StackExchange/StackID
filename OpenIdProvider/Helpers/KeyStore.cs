@@ -37,19 +37,11 @@ namespace OpenIdProvider.Helpers
 
         static KeyStore()
         {
-            try
-            {
-                var json = File.ReadAllText(Current.KeyStorePath);
+            var json = File.ReadAllText(Current.KeyStorePath);
 
-                foreach (var key in Newtonsoft.Json.JsonConvert.DeserializeObject<Key[]>(json))
-                {
-                    KeyCache[key.Version] = key;
-                }
-            }
-            catch (Exception e)
+            foreach (var key in Newtonsoft.Json.JsonConvert.DeserializeObject<Key[]>(json))
             {
-                Current.LogException(e);
-                throw;
+                KeyCache[key.Version] = key;
             }
         }
 

@@ -114,8 +114,6 @@ namespace OpenIdProvider.Controllers
         /// </summary>
         public ActionResult NotFound()
         {
-            Current.LogException(new Exception("NotFound"));
-
             Response.StatusCode = (int)System.Net.HttpStatusCode.NotFound;
             return View("NotFound");
         }
