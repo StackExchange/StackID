@@ -4,12 +4,25 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using OpenIdProvider.Helpers;
+using OpenIdProvider.Models;
 
 namespace OpenIdProvider.Tests
 {
     [TestFixture]
     public class SanitizeTests
     {
+        [Test]
+        public void VanityIds()
+        {
+            Assert.IsTrue(User.ValidVanityId("kevin.montrose"));
+            Assert.IsTrue(User.ValidVanityId("kevinmontrose"));
+            Assert.IsTrue(User.ValidVanityId("kevin-montrose1"));
+
+            Assert.IsFalse(User.ValidVanityId("_"));
+            Assert.IsFalse(User.ValidVanityId("+"));
+            Assert.IsFalse(User.ValidVanityId("bcddfkljasdfjiojasdfiojiojasdfjiojiojasdfjiojiojiojiojiojiojioasdfjiojiojasdfij"));
+        }
+
         [Test]
         public void Css()
         {

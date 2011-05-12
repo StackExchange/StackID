@@ -11,9 +11,6 @@ namespace OpenIdProvider
     {
         public static void RegisterRoutes(RouteCollection routes)
         {
-            // don't allow any .aspx's to be grabbed directly
-            routes.IgnoreRoute("{*allaspx}", new { allaspx = @".*\.aspx(/.*)?" });
-
             // Dodging RouteAttribute magic to keep the Monitoring controller as simple as possible
             routes.MapRoute("ping", new { controller = "Monitoring", action = "Ping" });
             routes.MapRoute("report", new { controller = "Monitoring", action = "Report" });

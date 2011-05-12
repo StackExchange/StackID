@@ -15,7 +15,7 @@
             </td>
             <td>
                 <input type="text" name="realname" id="realname" value="@(ViewData["realname"] ?? Model.RealName)" />
-                <span class="form-help">Optionally, your real name.</span>
+                <span class="form-help">optionally your real name</span>
             </td>
         </tr>
         <tr>
@@ -24,13 +24,7 @@
             </td>
             <td>
                 <input name="vanity" id="vanity" type="text" value="@(ViewData["vanity"] ?? Model.VanityProviderId)" />
-                <span class="form-help">Optionally, an easy to remember string for a vanity OpenId.</span>
-                <div class="form-help">
-                    Optional.<br />
-                    <br />
-                    An easy to remember string for when you are forced to manually enter your OpenId.<br />
-                    Example: "joe.everyman" or "john.q.public".
-                </div>
+                <span class="form-help">optionally an easy to remember string for a vanity openid</span>
             </td>
         </tr>
     </table>

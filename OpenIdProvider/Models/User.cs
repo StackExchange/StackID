@@ -129,7 +129,7 @@ namespace OpenIdProvider.Models
             return true;
         }
 
-        private static Regex AllowedVanityIdRegex = new Regex(@"^[a-z0-9\.]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static Regex AllowedVanityIdRegex = new Regex(@"^[a-z0-9\.\-]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         /// <summary>
         /// Returns true if this is a valid vanity id.
         /// 
@@ -142,6 +142,10 @@ namespace OpenIdProvider.Models
             if (id.Length > 40) return false;
 
             if (!AllowedVanityIdRegex.IsMatch(id)) return false;
+
+            // HACK: Unlike .aspx files, we can't seem to de-special-ify these files, so just don't accept them
+            //       Sort of silent, but the explanation text is already absurdly long
+            if (id.EndsWith(".cshtml")) return false;
 
             var existingRoutes = RouteAttribute.GetDecoratedRoutes().Keys.Select(k => k.ToLower());
 
@@ -158,7 +162,7 @@ namespace OpenIdProvider.Models
             if (vanity.HasValue() && !Models.User.ValidVanityId(vanity))
             {
                 created = null;
-                errorMessage = "Invalid Vanity OpenId";
+                errorMessage = "Vanity ID can contain letter, numbers, periods, dashes, and be up to 40 characters.";
 
                 return false;
             }

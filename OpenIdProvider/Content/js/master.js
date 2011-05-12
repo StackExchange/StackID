@@ -6,6 +6,7 @@ $(document).ready(
     function () {
         help.init();
         password.init();
+        vanity.init();
 
         // Focus on the first input=text thing on the page, if any
         var first = $("input[type='text']:first");
@@ -281,6 +282,53 @@ var password = function () {
             password.keyup(enforceRules);
             password2.keyup(enforceRules);
             if (vanity.length != 0) vanity.blur(enforceRules);
+        }
+    };
+} ();
+
+// Hold functions related to client side vanity id validation
+var vanity = function () {
+    var vanity = [];
+
+    var illegelChar = /[^\d\w\-\.]/i;
+    var endsWithCshtml = /\.cshtml$/i;
+
+    var error = $('<tr><td></td><td><div class="vanity-error"></div></td></tr>');
+
+    var enforceRules = function () {
+        error.detach();
+
+        var text = vanity.val();
+
+        if (text.length == 0) return;
+
+        if (text.length > 40) {
+            error.find('.vanity-error').text('Cannot be more than 40 characters long.');
+            vanity.parents('tr').after(error);
+            return;
+        }
+
+        if (illegelChar.test(text)) {
+            error.find('.vanity-error').text('Only letters, numbers, periods, and dashes.');
+            vanity.parents('tr').after(error);
+            return;
+        }
+
+        if (endsWithCshtml.test(text)) {
+            error.find('.vanity-error').text('Cannot end with .cshtml.');
+            vanity.parents('tr').after(error);
+            return;
+        }
+    };
+
+    return {
+        // attach to anything with id=vanity
+        init: function () {
+            vanity = $('#vanity')
+
+            if (vanity.length > 0) {
+                vanity.keyup(enforceRules);
+            }
         }
     };
 } ();
