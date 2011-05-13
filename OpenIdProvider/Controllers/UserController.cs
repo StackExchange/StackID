@@ -156,9 +156,10 @@ namespace OpenIdProvider.Controllers
 
                     var hadPreviously = old.HasValue();
 
-                    if (value.HasValue() && !Models.User.ValidVanityId(value))
+                    string errorMsg;
+                    if (value.HasValue() && !Models.User.IsValidVanityId(value, out errorMsg))
                     {
-                        return RecoverableError("Vanity ID can contain letter, numbers, periods, dashes, and be up to 40 characters.", new { realname = Request.Form["realname"], vanity = value });
+                        return RecoverableError(errorMsg, new { realname = Request.Form["realname"], vanity = value });
                     }
 
                     if (value.HasValue() && db.Users.Any(u => u.VanityProviderId == value)) return RecoverableError("That Vanity OpenId is already in use", new { realname = Request.Form["realname"], vanity = value });

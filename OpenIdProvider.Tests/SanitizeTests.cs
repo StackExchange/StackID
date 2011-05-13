@@ -14,13 +14,14 @@ namespace OpenIdProvider.Tests
         [Test]
         public void VanityIds()
         {
-            Assert.IsTrue(User.ValidVanityId("kevin.montrose"));
-            Assert.IsTrue(User.ValidVanityId("kevinmontrose"));
-            Assert.IsTrue(User.ValidVanityId("kevin-montrose1"));
+            string ignored;
+            Assert.IsTrue(User.IsValidVanityId("kevin.montrose", out ignored));
+            Assert.IsTrue(User.IsValidVanityId("kevinmontrose", out ignored));
+            Assert.IsTrue(User.IsValidVanityId("kevin-montrose1", out ignored));
 
-            Assert.IsFalse(User.ValidVanityId("_"));
-            Assert.IsFalse(User.ValidVanityId("+"));
-            Assert.IsFalse(User.ValidVanityId("bcddfkljasdfjiojasdfiojiojasdfjiojiojasdfjiojiojiojiojiojiojioasdfjiojiojasdfij"));
+            Assert.IsFalse(User.IsValidVanityId("_", out ignored));
+            Assert.IsFalse(User.IsValidVanityId("+", out ignored));
+            Assert.IsFalse(User.IsValidVanityId("bcddfkljasdfjiojasdfiojiojasdfjiojiojasdfjiojiojiojiojiojiojioasdfjiojiojasdfij", out ignored));
         }
 
         [Test]

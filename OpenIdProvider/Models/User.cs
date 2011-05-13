@@ -137,20 +137,37 @@ namespace OpenIdProvider.Models
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public static bool ValidVanityId(string id)
+        public static bool IsValidVanityId(string id, out string errorMsg)
         {
-            if (id.Length > 40) return false;
+            if (id.Length > 40)
+            {
+                errorMsg = "Vanity OpenId cannot be more than 40 characters long.";
+                return false;
+            }
 
-            if (!AllowedVanityIdRegex.IsMatch(id)) return false;
+            if (!AllowedVanityIdRegex.IsMatch(id))
+            {
+                errorMsg = "Vanity OpenId can only contain letters, numbers, dashes, and periods.";
+                return false;
+            }
 
             // HACK: Unlike .aspx files, we can't seem to de-special-ify these files, so just don't accept them
             //       Sort of silent, but the explanation text is already absurdly long
-            if (id.EndsWith(".cshtml")) return false;
+            if (id.EndsWith(".cshtml"))
+            {
+                errorMsg = "Vanity OpenId cannot end in .cshtml.";
+                return false;
+            }
 
             var existingRoutes = RouteAttribute.GetDecoratedRoutes().Keys.Select(k => k.ToLower());
 
-            if (existingRoutes.Contains(id.ToLower())) return false;
+            if (existingRoutes.Contains(id.ToLower()))
+            {
+                errorMsg = "This Vanity OpenId is reserved.";
+                return false;
+            }
 
+            errorMsg = null;
             return true;
         }
 
@@ -159,10 +176,9 @@ namespace OpenIdProvider.Models
         /// </summary>
         public static bool CreateAccount(string email, PendingUser pendingUser, DateTime now, string vanity, string realname, out User created, out string errorMessage)
         {
-            if (vanity.HasValue() && !Models.User.ValidVanityId(vanity))
+            if (vanity.HasValue() && !Models.User.IsValidVanityId(vanity, out errorMessage))
             {
                 created = null;
-                errorMessage = "Vanity ID can contain letter, numbers, periods, dashes, and be up to 40 characters.";
 
                 return false;
             }
