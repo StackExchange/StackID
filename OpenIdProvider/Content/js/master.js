@@ -24,6 +24,12 @@ $(document).ready(
         }
 
         first.focus();
+
+        // Force tab order (make sure actual inputs get first go at tab'ing)
+        var shouldTabLater = $('a');
+        for (var i = 0; i < shouldTabLater.length; i++) {
+            $(shouldTabLater[i]).attr('tabindex', 1);
+        }
     }
 );
 
