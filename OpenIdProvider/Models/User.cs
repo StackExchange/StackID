@@ -151,17 +151,17 @@ namespace OpenIdProvider.Models
                 return false;
             }
 
-            // HACK: Unlike .aspx files, we can't seem to de-special-ify these files, so just don't accept them
-            //       Sort of silent, but the explanation text is already absurdly long
-            if (id.EndsWith(".cshtml"))
-            {
-                errorMsg = "Vanity OpenId cannot end in .cshtml.";
-                return false;
-            }
-
             var existingRoutes = RouteAttribute.GetDecoratedRoutes().Keys.Select(k => k.ToLower());
 
             if (existingRoutes.Contains(id.ToLower()))
+            {
+                errorMsg = "This Vanity OpenId is reserved.";
+                return false;
+            }
+
+            // These two routes are manually mapped and *don't* contain illegal characters,
+            //    so we need to check for them seperately
+            if (id.ToLower() == "ping" || id.ToLower() == "report")
             {
                 errorMsg = "This Vanity OpenId is reserved.";
                 return false;
@@ -254,6 +254,17 @@ namespace OpenIdProvider.Models
             }
             catch (Exception e)
             {
+                // Hack: There isn't really a nice way to detect a unique constraint conflict,
+                //       so... check the message.  Checking for the constraint name so this isn't
+                //       *guaranteed* to break on non-English language systems... still not guaranteed
+                //       to work though.
+                if(e is System.Data.SqlClient.SqlException && e.Message.Contains("Users_EmailHash_EmailSaltVersion"))
+                {
+                    created = null;
+                    errorMessage = "Email address already registered.";
+                    return false;
+                }
+
                 Current.LogException(e);
                 created = null;
                 errorMessage = "User account could not be created.";

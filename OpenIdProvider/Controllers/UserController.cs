@@ -15,6 +15,15 @@ namespace OpenIdProvider.Controllers
         [Route("{vanityId}", RoutePriority.Low, AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous | AuthorizedUser.Administrator)]
         public ActionResult VanityIdentifier(string vanityId)
         {
+            // Hack: Continuing from Global.asax.cs
+            //       Enable vanity ids to end with .cshtml, via a rewrite with an otherwise
+            //       forbidden character (~).
+            var cshtml = "~cshtml";
+            if (vanityId.EndsWith(cshtml))
+            {
+                vanityId = vanityId.Substring(0, vanityId.Length - cshtml.Length) + ".cshtml";
+            }
+
             var user = Models.User.GetFromVanityId(vanityId);
 
             if (user != null)

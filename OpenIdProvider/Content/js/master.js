@@ -297,7 +297,6 @@ var vanity = function () {
     var vanity = [];
 
     var illegelChar = /[^\d\w\-\.]/i;
-    var endsWithCshtml = /\.cshtml$/i;
 
     var error = $('<tr><td></td><td><div class="vanity-error"></div></td></tr>');
 
@@ -316,12 +315,6 @@ var vanity = function () {
 
         if (illegelChar.test(text)) {
             error.find('.vanity-error').text('Only letters, numbers, periods, and dashes.');
-            vanity.parents('tr').after(error);
-            return;
-        }
-
-        if (endsWithCshtml.test(text)) {
-            error.find('.vanity-error').text('Cannot end with .cshtml.');
             vanity.parents('tr').after(error);
             return;
         }

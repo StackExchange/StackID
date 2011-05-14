@@ -25,6 +25,21 @@ namespace OpenIdProvider
             routes.MapRoute("{*url}", new { controller = "Home", action = "NotFound" });
         }
 
+        protected void Application_BeginRequest(object sender, EventArgs e)
+        {
+            var cur = HttpContext.Current;
+            var path = cur.Request.Path;
+
+            var cshtml = ".cshtml";
+
+            // Hack: MVC doesn't like routes which contain ".cshtml"
+            //       so intercept such requests, re-write them, and redirect
+            if (path.EndsWith(cshtml) && path.Count(c => c == '/') == 1)
+            {
+                cur.Response.Redirect(path.Substring(0, path.Length - cshtml.Length) + "~cshtml", true);
+            }
+        }
+
         protected void Application_Error(object sender, EventArgs e)
         {
             try

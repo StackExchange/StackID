@@ -23,7 +23,7 @@ namespace OpenIdProvider.Controllers
             return
                 new ContentResult
                 {
-                    Content = "OK",
+                    Content = Environment.MachineName,
                     ContentType = "text/plain",
                     ContentEncoding = Encoding.UTF8
                 };
