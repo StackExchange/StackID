@@ -299,6 +299,17 @@ namespace OpenIdProvider.Controllers
                 return SignupIFrame(null, background, color);
             }
 
+            if (!Models.User.IsValidEmail(ref email))
+            {
+                // Can't use standard RecoverableError things in affiliate forms, do it by hand
+                ViewData["error_message"] = "Email is not valid";
+                ViewData["affId"] = CurrentAffiliate.Id;
+                ViewData["realname"] = realname;
+                ViewData["email"] = email;
+
+                return SignupIFrame(null, background, color);
+            }
+
             // Check that the captcha succeeded
             string error;
             if (!Captcha.Verify(Request.Form, out error) || !Password.CheckPassword(password, password2, email, null, null, out error))
@@ -350,13 +361,19 @@ namespace OpenIdProvider.Controllers
 
             var completeLink = Current.Url(complete.Url);
 
-            Current.Email.SendEmail(
-                email,
-                Email.Template.CompleteRegistrationViaAffiliate,
-                new {
-                    AffiliateName = CurrentAffiliate.HostFilter,
-                    RegistrationLink = completeLink
-                });
+            var success = 
+                Current.Email.SendEmail(
+                    email,
+                    Email.Template.CompleteRegistrationViaAffiliate,
+                    new {
+                        AffiliateName = CurrentAffiliate.HostFilter,
+                        RegistrationLink = completeLink
+                    });
+
+            if (!success)
+            {
+                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+            }
 
             ViewData["Background"] = background;
             ViewData["Color"] = color;

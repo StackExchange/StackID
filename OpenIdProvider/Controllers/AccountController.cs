@@ -109,6 +109,7 @@ namespace OpenIdProvider.Controllers
         public ActionResult SendEmailVerficationToken(string email, string password, string password2, string realname)
         {
             if (email.IsNullOrEmpty()) return RecoverableError("Email is required", new { realname });
+            if (!Models.User.IsValidEmail(ref email)) return RecoverableError("Email is not valid", new { email, realname });
 
             // Check that the captcha succeeded
             string error;
@@ -148,7 +149,10 @@ namespace OpenIdProvider.Controllers
 
             var completeLink = Current.Url(toComplete.Url);
 
-            Current.Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink });
+            if (!Current.Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink }))
+            {
+                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+            }
 
             return Success("Registration Email Sent", "Check your email for the link to complete your registration");
         }
@@ -240,7 +244,10 @@ namespace OpenIdProvider.Controllers
 
             var resetLink = Current.Url(toReset.Url);
 
-            Current.Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink });
+            if (!Current.Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink }))
+            {
+                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+            }
 
             return Success("Password Recovery Email Sent", "Check your email for the link to reset your password.");
         }
@@ -292,7 +299,10 @@ namespace OpenIdProvider.Controllers
             Current.WriteDB.PasswordResets.DeleteOnSubmit(t);
             Current.WriteDB.SubmitChanges();
 
-            Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged);
+            if (!Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged))
+            {
+                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+            }
 
             user.Login(now);
 

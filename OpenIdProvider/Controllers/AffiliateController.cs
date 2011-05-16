@@ -85,7 +85,9 @@ namespace OpenIdProvider.Controllers
                         Q = Convert.ToBase64String(key.Q)
                     });
 
-            Current.Email.SendEmail(
+
+            var success = 
+                Current.Email.SendEmail(
                 Current.LoggedInUser.Email,
                 Email.Template.AffiliateRegistered,
                 new
@@ -100,6 +102,11 @@ namespace OpenIdProvider.Controllers
                     Id = newAffiliate.Id,
                     Host = newAffiliate.HostFilter
                 });
+
+            if (!success)
+            {
+                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+            }
 
             return jsonKey;
         }

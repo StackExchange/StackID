@@ -62,7 +62,7 @@ namespace OpenIdProvider.Helpers
         /// 
         /// cc and bcc accept semicolon delimited lists of addresses.
         /// </summary>
-        public void SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
+        public bool SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
         {
             var ccList = new List<string>();
             var bccList = new List<string>();
@@ -73,7 +73,7 @@ namespace OpenIdProvider.Helpers
             string subject, textMessage;
             var htmlMessage = GetEmailText(Enum.GetName(typeof(Template), templateName), @params, out subject, out textMessage);
 
-            SendEmailImpl(to, ccList, bccList, subject, htmlMessage, textMessage);
+            return SendEmailImpl(to, ccList, bccList, subject, htmlMessage, textMessage);
         }
 
         /// <summary>
@@ -85,6 +85,6 @@ namespace OpenIdProvider.Helpers
         /// to be swapped out easily.  SE Inc. relies on some third-party, closed source, mailing
         /// libraries.
         /// </summary>
-        protected abstract void SendEmailImpl(string to, IEnumerable<string> cc, IEnumerable<string> bcc, string title, string bodyHtml, string bodyText);
+        protected abstract bool SendEmailImpl(string to, IEnumerable<string> cc, IEnumerable<string> bcc, string title, string bodyHtml, string bodyText);
     }
 }

@@ -12,6 +12,22 @@ namespace OpenIdProvider.Tests
     public class SanitizeTests
     {
         [Test]
+        public void ValidEmails()
+        {
+            string email = "kevin@somewhere.com";
+            Assert.IsTrue(Models.User.IsValidEmail(ref email));
+
+            string email2 = "     kevin@somewhere.com";
+            Assert.IsTrue(Models.User.IsValidEmail(ref email2));
+
+            string bad1 = "kevin+somewhere.com";
+            Assert.IsFalse(Models.User.IsValidEmail(ref bad1));
+
+            string bad2 = "kevin@somewhere";
+            Assert.IsFalse(Models.User.IsValidEmail(ref bad2));
+        }
+
+        [Test]
         public void VanityIds()
         {
             string ignored;

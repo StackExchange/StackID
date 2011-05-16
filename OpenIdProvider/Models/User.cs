@@ -172,6 +172,27 @@ namespace OpenIdProvider.Models
         }
 
         /// <summary>
+        /// Very simple email validation logic, just checks for a @ and . after it.
+        /// 
+        /// Also strips any bogus white space off the email address.
+        /// </summary>
+        public static bool IsValidEmail(ref string email)
+        {
+            if (email.IsNullOrEmpty()) return false;
+
+            email = email.Trim();
+
+            var at = email.IndexOf('@');
+            if (at == -1) return false;
+
+            var dot = email.IndexOf('.', at + 2);
+
+            if (dot == -1) return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Create a new account given an email and password
         /// </summary>
         public static bool CreateAccount(string email, PendingUser pendingUser, DateTime now, string vanity, string realname, out User created, out string errorMessage)

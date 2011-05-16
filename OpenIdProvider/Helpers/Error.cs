@@ -51,7 +51,20 @@ namespace OpenIdProvider.Helpers
                     Parameters = new Dictionary<string, string>();
                     foreach (var p in req.Params.AllKeys)
                     {
-                        Parameters[p] = req.Params[p];
+                        var val = req.Params[p];
+
+                        // Shouldn't ask people to trust us with these in the error logs
+                        if (p.Equals("password", StringComparison.InvariantCultureIgnoreCase) || p.Equals("password2", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            if (val.HasValue())
+                            {
+                                for (int i = 0; i < val.Length; i++)
+                                {
+                                    val += "*";
+                                }
+                            }
+                        }
+                        Parameters[p] = val;
                     }
 
                     ReceivedCookies = new Dictionary<string, string>();
