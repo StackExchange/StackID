@@ -327,22 +327,17 @@ namespace OpenIdProvider.Controllers
 
             var callback = Current.GetFromCache<string>(CallbackKey(cookie));
 
-            var token = Current.UniqueId().ToString();
-            var authCode = Current.MakeAuthCode(new { email, token, realname, callback, affId = CurrentAffiliate.Id });
-
-            string pwSalt;
-            string pwHash = Current.SecureHash(password, out pwSalt);
-
-            var pendingUser = new PendingUser
+            string token, authCode;
+            if (!PendingUser.CreatePendingUser(email, password, realname, out token, out authCode, out error))
             {
-                AuthCode = authCode,
-                CreationDate = Current.Now,
-                PasswordSalt = pwSalt,
-                PasswordHash = pwHash
-            };
+                // Can't use standard RecoverableError things in affiliate forms, do it by hand
+                ViewData["error_message"] = error;
+                ViewData["affId"] = CurrentAffiliate.Id;
+                ViewData["email"] = email;
+                ViewData["realname"] = realname;
 
-            Current.WriteDB.PendingUsers.InsertOnSubmit(pendingUser);
-            Current.WriteDB.SubmitChanges();
+                return SignupIFrame(null, background, color);
+            }
 
             var complete =
                 SafeRedirect(

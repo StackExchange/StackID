@@ -118,22 +118,11 @@ namespace OpenIdProvider.Controllers
             string message;
             if (!Password.CheckPassword(password, password2, email, null, null, out message)) return RecoverableError(message, new { email, realname });
 
-            string pwSalt;
-            string pwHash = Current.SecureHash(password, out pwSalt);
-
-            var token = Current.UniqueId().ToString();
-            var authCode = Current.MakeAuthCode(new { email, token, realname });
-
-            var pendingUser = new PendingUser
+            string token, authCode;
+            if (!PendingUser.CreatePendingUser(email, password, realname, out token, out authCode, out error))
             {
-                AuthCode = authCode,
-                CreationDate = Current.Now,
-                PasswordHash = pwHash,
-                PasswordSalt = pwSalt
-            };
-
-            Current.WriteDB.PendingUsers.InsertOnSubmit(pendingUser);
-            Current.WriteDB.SubmitChanges();
+                return RecoverableError(error, new { email, realname });
+            }
 
             var toComplete = 
                 SafeRedirect(
@@ -184,7 +173,7 @@ namespace OpenIdProvider.Controllers
             User newUser;
             if (!Models.User.CreateAccount(email, pending, now, null, realname, out newUser, out error))
             {
-                return IrrecoverableError("Registration Failed", "New user could not be created");
+                return IrrecoverableError("Registration Failed", error);
             }
 
             pending.DeletionDate = now;
@@ -335,7 +324,7 @@ namespace OpenIdProvider.Controllers
             User newUser;
             if (!Models.User.CreateAccount(email, pending, now, null, realname, out newUser, out error))
             {
-                return IrrecoverableError("Registration Failed", "New user could not be created");
+                return IrrecoverableError("Registration Failed", error);
             }
 
             pending.DeletionDate = now;

@@ -164,6 +164,7 @@
     <Compile Include="Models\DBContext.Restrictions.cs">
       <DependentUpon>DBContext.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\PendingUser.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\UserAttributeTypeId.cs" />
     <Compile Include="Models\UserHistoryTypeId.cs" />
