@@ -385,6 +385,15 @@ namespace OpenIdProvider.Controllers
         {
             if (Current.LoggedInUser == null) return NotFound();
 
+            Uri parsedCallback;
+            if(Uri.TryCreate(callback, UriKind.Absolute, out parsedCallback))
+            {
+                if (Current.LoggedInUser.HasGrantedAuthorization(parsedCallback.Host))
+                {
+                    return AffiliateRedirect(AddIdentifier(callback, Current.LoggedInUser.GetClaimedIdentifier()));
+                }
+            }
+
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.UserCookieName);
 
             Current.AddToCache(CallbackKey(cookie), callback, TimeSpan.FromMinutes(15));
@@ -405,6 +414,12 @@ namespace OpenIdProvider.Controllers
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.UserCookieName);
 
             var callback = Current.GetFromCache<string>(CallbackKey(cookie));
+
+            Uri parsedCallback;
+            if (Uri.TryCreate(callback, UriKind.Absolute, out parsedCallback))
+            {
+                Current.LoggedInUser.GrantAuthorization(parsedCallback.Host);
+            }
 
             Current.RemoveFromCache(CallbackKey(cookie));
 
@@ -463,10 +478,20 @@ namespace OpenIdProvider.Controllers
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
             var user = Models.User.FindUserByEmail(email);
 
-            if (user == null || user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
+            if (user == null)
             {
                 // Standard recoverable error stuff doesn't work here, so do it manually
-                ViewData["error_message"] = "Invalid email or password";
+                ViewData["error_message"] = "No account with this email found";
+                ViewData["email"] = email;
+                ViewData["affId"] = CurrentAffiliate.Id;
+
+                return LoginIFrame(null, background, color);
+            }
+
+            if(user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
+            {
+                // Standard recoverable error stuff doesn't work here, so do it manually
+                ViewData["error_message"] = "Incorrect password";
                 ViewData["email"] = email;
                 ViewData["affId"] = CurrentAffiliate.Id;
 

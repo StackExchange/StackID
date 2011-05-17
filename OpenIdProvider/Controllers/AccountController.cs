@@ -61,10 +61,16 @@ namespace OpenIdProvider.Controllers
             var now = Current.Now;
             var user = Models.User.FindUserByEmail(email);
 
-            if (user == null || user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
+            if (user == null)
             {
                 IPBanner.BadLoginAttempt(user, Current.RemoteIP);
-                return RecoverableError("Unknown email or incorrect password", new { email, session });
+                return RecoverableError("No account with this email found", new { email, session });
+            }
+
+            if (user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
+            {
+                IPBanner.BadLoginAttempt(user, Current.RemoteIP);
+                return RecoverableError("Incorrect password", new { email, session });
             }
 
             user.Login(now);
