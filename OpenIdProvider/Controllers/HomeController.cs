@@ -13,7 +13,7 @@ namespace OpenIdProvider.Controllers
         [Route("favicon.ico")]
         public ActionResult Favicon()
         {
-            return new EmptyResult();
+            return RedirectPermanent("/Content/img/favicon.ico");
         }
 
         [Route("404")]
