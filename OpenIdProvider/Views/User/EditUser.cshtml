@@ -15,7 +15,7 @@
             </td>
             <td>
                 <input type="text" name="realname" id="realname" value="@(ViewData["realname"] ?? Model.RealName)" />
-                <span class="form-help">optionally your real name</span>
+                <span class="form-help">John Smith (optional)</span>
             </td>
         </tr>
         <tr>
@@ -24,7 +24,7 @@
             </td>
             <td>
                 <input name="vanity" id="vanity" type="text" value="@(ViewData["vanity"] ?? Model.VanityProviderId)" />
-                <span class="form-help">optional</span>
+                <span class="form-help">john.smith (optional)</span>
             </td>
         </tr>
     </table>

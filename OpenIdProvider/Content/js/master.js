@@ -114,8 +114,9 @@ var help = function () {
                 color: "black",
                 opacity: 1,
                 width: jText.width() + 2,
-                height: jText.height()
-            });
+                height: jText.height(),
+                fontSize: jText.css('font-size')
+            }).attr('type', 'text');
 
             copyCss(jText, actualOverlay, ["font-family", "font-size", "line-height", "text-align"]);
             jText.css({
@@ -169,8 +170,8 @@ var password = function () {
     var email = [];
     var vanity = [];
 
-    var error = $('<tr><td></td><td><div class="pw-error"></div></td></tr>');
-    var error2 = $('<tr><td></td><td><div class="pw-error">Passwords do not match.</div></td></tr>');
+    var error = $('<span class="pw-error"></span>');
+    var error2 = $('<span class="pw-error">Passwords do not match.</span>');
 
     var enableForm = function () {
         $('input[type="submit"]').removeAttr('disabled');
@@ -183,7 +184,7 @@ var password = function () {
         if (password.val().length == 0) { return; }
 
         if (password.val() != password2.val()) {
-            password2.parents('tr').after(error2);
+            password2.after(error2);
 
             return;
         }
@@ -239,23 +240,23 @@ var password = function () {
 
             nag = nag.replace(/(.*),/, '$1, or');
 
-            error.find('.pw-error').text(nag);
+            error.text(nag);
 
-            password.parents('tr').after(error);
+            password.after(error);
             return;
         }
 
         if (email.length != 0 && email.val().length > 0 && (pw.indexOf(email.val().toLowerCase()) != -1 || email.val().toLowerCase().indexOf(pw) != -1)) {
-            error.find('.pw-error').text('Cannot match your account name.');
+            error.text('Cannot match your account name.');
 
-            password.parents('tr').after(error);
+            password.after(error);
             return;
         }
 
         if (vanity.length != 0 && vanity.val().length != 0 && (pw.indexOf(vanity.val().toLowerCase()) != -1 || vanity.val().toLowerCase().indexOf(pw) != -1)) {
-            error.find('.pw-error').text('Cannot match your vanity identifier.');
+            error.text('Cannot match your vanity identifier.');
 
-            password.parents('tr').after(error);
+            password.after(error);
             return;
         }
 
@@ -264,9 +265,9 @@ var password = function () {
         if (uniqueChars < minPasswordLength) {
             var remaining = minPasswordLength - uniqueChars;
 
-            error.find('.pw-error').text('Must contain at least ' + remaining + ' more unique characters.');
+            error.text('Must contain at least ' + remaining + ' more unique characters.');
 
-            password.parents('tr').after(error);
+            password.after(error);
             return;
         }
 

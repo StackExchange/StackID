@@ -21,7 +21,7 @@
                 </td>
                 <td class="input-td">
                     <input type="text" name="email" id="email" value="@ViewData["email"]" />
-                    <span class="form-help">a valid email address</span>
+                    <span class="form-help">@("name@example.com")</span>
                 </td>
             </tr>
             <tr>
@@ -30,7 +30,7 @@
                 </td>
                 <td class="input-td">
                     <input type="text" name="realname" id="realname" value="@ViewData["realname"]" />
-                    <span class="form-help">optionally your real name</span>
+                    <span class="form-help">John Smith (optional)</span>
                 </td>
             </tr>
             <tr>
@@ -39,6 +39,7 @@
                 </td>
                 <td class="input-td">
                     <input type="password" name="password" id="password" />
+                    <span class="form-help">Password</span>
                 </td>
             </tr>
             <tr>
@@ -47,6 +48,7 @@
                 </td>
                 <td class="input-td">
                     <input type="password" name="password2" id="password2" />
+                    <span class="form-help">Password</span>
                 </td>
             </tr>
             <tr>
