@@ -373,7 +373,7 @@ namespace OpenIdProvider.Controllers
             ViewData["Background"] = background;
             ViewData["Color"] = color;
 
-            return Success("Registration Email Sent", "Check your email for the link to complete your registration.");
+            return Success("Registration Email Sent to " + email, "Check your email for the link to complete your registration.");
         }
 
         /// <summary>
@@ -474,6 +474,16 @@ namespace OpenIdProvider.Controllers
         public ActionResult HandleAffiliateLogin(string email, string password, string background, string color)
         {
             var now = Current.Now;
+
+            if (!Models.User.IsValidEmail(ref email))
+            {
+                // Standard recoverable error stuff doesn't work here, so do it manually
+                ViewData["error_message"] = "Invalid email address";
+                ViewData["email"] = email;
+                ViewData["affId"] = CurrentAffiliate.Id;
+
+                return LoginIFrame(null, background, color);
+            }
 
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
             var user = Models.User.FindUserByEmail(email);

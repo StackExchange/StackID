@@ -11,10 +11,10 @@
 @ViewData.HandleErrorMessage()
 
 <div class="registration-form">
-    <form method="post" action="/affiliate/form/signup/submit?affId=@ViewData["affId"]">
+    <form method="post" action="/affiliate/form/signup/submit?affId=@ViewData["affId"]" autocomplete="off">
         <table class="position-table">
             <tr>
-                <td>
+                <td class="label-td">
                     <label for="email">Email</label>
                 </td>
                 <td class="input-td">
@@ -23,7 +23,7 @@
                 </td>
             </tr>
             <tr>
-                <td>
+                <td class="label-td">
                     <label for="realname">Name</label>
                 </td>
                 <td class="input-td">
@@ -32,7 +32,7 @@
                 </td>
             </tr>
             <tr>
-                <td>
+                <td class="label-td">
                     <label for="password">Password</label>
                 </td>
                 <td class="input-td">
@@ -41,7 +41,7 @@
                 </td>
             </tr>
             <tr>
-                <td>
+                <td class="label-td">
                     <label for="password2">Again</label>
                 </td>
                 <td class="input-td">
@@ -50,7 +50,7 @@
                 </td>
             </tr>
             <tr>
-                <td></td>
+                <td class="label-td"></td>
                 <td class="input-td">
                     @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
                 </td>

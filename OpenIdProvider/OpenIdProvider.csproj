@@ -267,6 +267,7 @@
     <Content Include="Views\Templates\ResetPassword.cshtml" />
     <Content Include="Views\Account\AffiliateRegistrationRedirect.cshtml" />
     <Content Include="Views\Account\PromptForAuthorization.cshtml" />
+    <Content Include="Views\Templates\Home.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />

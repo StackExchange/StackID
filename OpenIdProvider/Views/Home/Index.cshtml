@@ -2,13 +2,9 @@
 
 @{
     ViewData["Title"] = "";
+    ViewData["PageTitle"] = Current.SiteName;
 }
 
 <div class="explanation">
-    <p>
-        This is an <a href="http://en.wikipedia.org/wiki/OpenID">OpenID provider</a>.
-        <br />
-        <br />
-        <b><font color="red">Under testing, do not depend upon.</font></b>
-    </p>
+    @Html.Raw(OpenIdProvider.Helpers.Template.FormatTemplate("Home"))
 </div>

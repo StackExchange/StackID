@@ -59,6 +59,12 @@ namespace OpenIdProvider.Controllers
         public ActionResult DoLogin(string email, string password, string session)
         {
             var now = Current.Now;
+
+            if (!Models.User.IsValidEmail(ref email))
+            {
+                return RecoverableError("Invalid email address", new { email, session });
+            }
+
             var user = Models.User.FindUserByEmail(email);
 
             if (user == null)
@@ -149,7 +155,7 @@ namespace OpenIdProvider.Controllers
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }
 
-            return Success("Registration Email Sent", "Check your email for the link to complete your registration");
+            return Success("Registration Email Sent to " + email, "Check your email for the link to complete your registration");
         }
 
         /// <summary>
@@ -244,7 +250,7 @@ namespace OpenIdProvider.Controllers
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }
 
-            return Success("Password Recovery Email Sent", "Check your email for the link to reset your password.");
+            return Success("Password Recovery Email Sent to " + email, "Check your email for the link to reset your password.");
         }
 
         /// <summary>
@@ -253,20 +259,57 @@ namespace OpenIdProvider.Controllers
         /// token is a single use token that was previously sent
         /// to a user via email.
         /// </summary>
-        [Route("account/password-reset", AuthorizedUser.Anonymous)]
+        [Route("account/password-reset", AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)]
         public ActionResult NewPassword(string token)
         {
-            var hash = Current.WeakHash(token);
+            if (Current.LoggedInUser == null)
+            {
+                var hash = Current.WeakHash(token);
 
-            var t = Current.ReadDB.PasswordResets.Where(p => p.TokenHash == hash).SingleOrDefault();
+                var t = Current.ReadDB.PasswordResets.Where(p => p.TokenHash == hash).SingleOrDefault();
 
-            if (t == null) return IrrecoverableError("Password Reset Request Not Found", "We could not find a pending password reset request.");
+                if (t == null) return IrrecoverableError("Password Reset Request Not Found", "We could not find a pending password reset request.");
 
-            Current.GenerateAnonymousXSRFCookie();
+                Current.GenerateAnonymousXSRFCookie();
 
-            ViewData["token"] = token;
+                ViewData["token"] = token;
+
+                return View();
+            }
 
             return View();
+        }
+
+        /// <summary>
+        /// Repeated logic from SetNewPassword.
+        /// 
+        /// Pass it a resetToken to destroy on success (if user is anonymous).
+        /// 
+        /// Returns null if everything is OK, and an ActionResult if an error occurred.
+        /// </summary>
+        private ActionResult ChangePasswordAndSendEmail(string password, string password2, string token, PasswordReset resetToken, User user, DateTime now)
+        {
+            string message;
+            if (!Password.CheckPassword(password, password2, user.Email, user.VanityProviderId, user.ProviderId, out message))
+                return RecoverableError(message, new { token });
+
+            user.ChangePassword(now, password);
+
+            if (resetToken != null)
+            {
+                Current.WriteDB.PasswordResets.DeleteOnSubmit(resetToken);
+            }
+
+            Current.WriteDB.SubmitChanges();
+
+            var account = SafeRedirect((Func<ActionResult>)(new UserController()).ViewUser);
+
+            if (!Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged, new { AccountLink = Current.Url(account.Url) }))
+            {
+                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -274,34 +317,33 @@ namespace OpenIdProvider.Controllers
         /// 
         /// Actually updates the user's password.
         /// </summary>
-        [Route("account/password-reset/submit", HttpVerbs.Post, AuthorizedUser.Anonymous)]
+        [Route("account/password-reset/submit", HttpVerbs.Post, AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)]
         public ActionResult SetNewPassword(string token, string password, string password2)
         {
-            var hash = Current.WeakHash(token);
-            var t = Current.WriteDB.PasswordResets.SingleOrDefault(u => u.TokenHash == hash);
-
-            if (t == null) return IrrecoverableError("Password Reset Request Not Found", "We could not find a pending password reset request.");
-
             var now = Current.Now;
-            var user = t.User;
+            var success = Success("Password Reset", "Your password has been reset.");
 
-            string message;
-            if (!Password.CheckPassword(password, password2, user.Email, user.VanityProviderId, user.ProviderId, out message)) 
-                return RecoverableError(message, new { token });
-
-            user.ChangePassword(now, password);
-
-            Current.WriteDB.PasswordResets.DeleteOnSubmit(t);
-            Current.WriteDB.SubmitChanges();
-
-            if (!Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged))
+            if (Current.LoggedInUser == null)
             {
-                return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
+                var hash = Current.WeakHash(token);
+                var t = Current.WriteDB.PasswordResets.SingleOrDefault(u => u.TokenHash == hash);
+
+                if (t == null) return IrrecoverableError("Password Reset Request Not Found", "We could not find a pending password reset request.");
+                
+                var user = t.User;
+
+                var res = ChangePasswordAndSendEmail(password, password2, token, t, user, now);
+                if (res != null) return res;
+
+                user.Login(now);
+
+                return success;
             }
 
-            user.Login(now);
+            var ret = ChangePasswordAndSendEmail(password, password2, token, null, Current.LoggedInUser, now);
+            if (ret != null) return ret;
 
-            return Success("Password Reset", "Your password has been reset.");
+            return success;
         }
 
         /// <summary>

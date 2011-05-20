@@ -87,8 +87,17 @@ var help = function () {
     function showHideHelpOverlay(jText, focus) {
 
         // we can't check for layout correctness until the edit box is actually on screen
-        if (!jText.is(":visible"))
+        if (!jText.is(":visible")) {
+            // some browsers (IE9 for one) won't have laid the text boxes out by this point
+            //    this means we need to wait a moment and then continue
+            setTimeout(
+                function () {
+                    showHideHelpOverlay(jText, focus);
+                },
+                100
+            );
             return;
+        }
 
         if (jText.val().length != 0) {
             // IE renders text differently at alpha=100 and with no filter at all, so we explicitly remove it

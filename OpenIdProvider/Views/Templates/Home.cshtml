@@ -1,0 +1,18 @@
+﻿@using OpenIdProvider
+@model dynamic
+
+<h2>What is OpenID?</h2>
+
+<p style="font-size:120%">
+    It’s a single username and password that allows you to log in to any OpenID-enabled site.<br />
+    It works on thousands of websites.<br />
+    It’s an open standard.<br />
+    <a href="http://openid.net/get-an-openid/what-is-openid/">learn more »</a>
+</p>
+
+<p>
+    To log into any website supporting OpenID, you can simply type <code>@(Current.AppRootUri.Host)</code> into their login form.<br />
+    Such forms often appear like:
+</p>
+
+<div class="openid-example-login"></div>
