@@ -37,7 +37,8 @@ namespace OpenIdProvider.Helpers
             CompleteRegistration,
             CompleteRegistrationViaAffiliate,
             PasswordChanged,
-            ResetPassword
+            ResetPassword,
+            ResetPasswordAffiliate
         }
 
         /// <summary>

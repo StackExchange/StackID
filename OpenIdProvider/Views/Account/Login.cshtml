@@ -17,21 +17,17 @@
         <div>
             <table class="position-table">
                 <tr>
-                    <td>
-                        <label for="email">Email</label>
-                    </td>
                     <td class="input-td">
-                        <input type="text" name="email" id="email" value="@ViewData["email"]" />
+                        <input class="framed-text-field" type="text" name="email" id="email" value="@ViewData["email"]" maxlength="100" />
                         <span class="form-help">@("name@example.com")</span>
                     </td>
-                </tr>
-                <tr>
-                    <td>
-                        <label for="password">Password</label>
-                    </td>
                     <td class="input-td">
-                        <input type="password" name="password" id="password" />
+                        <input class="framed-text-field" type="password" name="password" id="password" />
                         <span class="form-help">Password</span>
+                    </td>
+                    <td></td>
+                    <td class="input-td">
+                        <input type="submit" class="affiliate-button" value="Sign In" />
                     </td>
                 </tr>
             </table>
@@ -44,8 +40,6 @@
         {
             <input type="hidden" name="session" value="@session" />
         }
-
-        <input type="submit" class="orange" value="Login" />
 
         <br />
         <br />

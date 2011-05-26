@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using OpenIdProvider.Helpers;
 using OpenIdProvider;
+using System.IO.Compression;
 
 namespace OpenIdProvider.Controllers
 {
@@ -23,7 +24,9 @@ namespace OpenIdProvider.Controllers
             // Sometimes we know that we want to reject a request, but also want to show the user
             //   something when it happens, so we check here.
             //   Special exception for /openid/provider, since its a "special" route that dodges all our Route magic
-            if (filterContext.HttpContext.Request.Url.AbsolutePath != "/openid/provider" && Current.RejectRequest)
+            var path = filterContext.HttpContext.Request.Url.AbsolutePath;
+
+            if (path != "/openid/provider" && path != "/affiliate/form/switch" && Current.RejectRequest)
             {
                 filterContext.Result = NotFound();
                 return;
@@ -56,6 +59,29 @@ namespace OpenIdProvider.Controllers
             }
 #endif
 
+            // Handle Acccept-Encoding
+            //   As a site note: why, in the year 2011 (offically "the future") do we have to opt into this stuff?
+            var acceptEncoding = filterContext.HttpContext.Request.Headers["Accept-Encoding"];
+            if (acceptEncoding.HasValue())
+            {
+                acceptEncoding = acceptEncoding.ToLowerInvariant();
+                var response = filterContext.HttpContext.Response;
+
+                if (acceptEncoding.Contains("gzip"))
+                {
+                    response.AppendHeader("Content-Encoding", "gzip");
+                    response.Filter = new GZipStream(response.Filter, CompressionMode.Compress);
+                }
+                else
+                {
+                    if (acceptEncoding.Contains("deflate"))
+                    {
+                        response.AppendHeader("Content-Encoding", "deflate");
+                        response.Filter = new DeflateStream(response.Filter, CompressionMode.Compress);
+                    }
+                }
+            }
+
             base.OnActionExecuting(filterContext);
         }
 
@@ -67,7 +93,7 @@ namespace OpenIdProvider.Controllers
             // See: https://developer.mozilla.org/en/the_x-frame-options_response_header
             if (Current.ShouldBustFrames)
             {
-                filterContext.HttpContext.Response.Headers.Add("X-Frame-Options", "DENY");
+               filterContext.HttpContext.Response.Headers.Add("X-Frame-Options", "DENY");
             }
 
             // Generic "try that again" infrastrcture to shove previously seen values back into forms.
@@ -214,12 +240,22 @@ namespace OpenIdProvider.Controllers
         ///  - Registration via Affiliate Step #1
         ///  - Affiliate Registration
         /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
         public ActionResult Success(string title, string message)
         {
             ViewData["title"] = title;
             ViewData["message"] = message;
+
+            return View("Success");
+        }
+
+        /// <summary>
+        /// Analogous to Success(), but displays a "if you didn't get the e-mail, blah blah blah" text too.
+        /// </summary>
+        public ActionResult SuccessEmail(string title, string message)
+        {
+            ViewData["title"] = title;
+            ViewData["message"] = message;
+            ViewData["isEmail"] = true;
 
             return View("Success");
         }
@@ -254,6 +290,15 @@ namespace OpenIdProvider.Controllers
 
             var registered = routes.Where(v => v.Value == toAction).Select(v => v.Key).Single();
 
+            return UnsafeRedirect(registered, @params);
+        }
+
+        /// <summary>
+        /// Redirect to a specific route, this is unsafe as it doesn't guarantee the route exists
+        /// before creating the redirect.
+        /// </summary>
+        public RedirectResult UnsafeRedirect(string route, object @params = null)
+        {
             var encoded = new List<string>();
 
             if (@params != null)
@@ -264,7 +309,7 @@ namespace OpenIdProvider.Controllers
 
             var paramStr = string.Join("&", encoded);
 
-            var url = "/" + registered;
+            var url = "/" + route;
 
             if (paramStr.Length != 0) url += "?" + paramStr;
 

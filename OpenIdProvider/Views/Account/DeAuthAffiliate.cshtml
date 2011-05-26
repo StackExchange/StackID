@@ -1,0 +1,24 @@
+﻿@using OpenIdProvider
+
+@{
+    var affHost = ViewData["affHost"];
+    ViewData["Title"] = "Revoke " + affHost+"'s Authorization";
+}
+
+@ViewData.HandleErrorMessage()
+
+<div>
+    <p>
+        Revoke @affHost's ability to contact you or access your information?
+    </p>
+</div>
+
+<div class="registration-form">
+    <form method="post" action="/account/de-auth/submit" autocomplete="off">
+        <input type="submit" class="orange" value="Confirm" />
+        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="hidden" name="affHost" value="@affHost" />
+        <input type="hidden" name="email" value="@ViewData["email"]" />
+        <input type="hidden" name="authCode" value="@ViewData["authCode"]" />
+    </form>
+</div>

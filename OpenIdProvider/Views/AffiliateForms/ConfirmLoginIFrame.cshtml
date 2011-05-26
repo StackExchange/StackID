@@ -8,13 +8,13 @@
 
 <div class="explanation">
     <p>
-        Send your information to this site?
+        Send your @Current.SiteName account information to this site?
     </p>
 </div>
 
 <div class="login-form">
     <form method="post" action="/affiliate/form/confirm/submit?affId=@ViewData["affId"]">
-        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="hidden" id="fkey" name="fkey" value="@Current.XSRFToken.Value" />
         <input type="submit" class="affiliate-button" name="accept" value="Login" />
     </form>
 </div>

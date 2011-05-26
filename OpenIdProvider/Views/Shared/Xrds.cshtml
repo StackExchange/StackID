@@ -18,6 +18,10 @@
         else
         {
 			<Type>http://specs.openid.net/auth/2.0/signon</Type>
+            if (Model != null)
+            {
+                <LocalID>@Model.GetClaimedIdentifier()</LocalID>
+            }
         }
 			<Type>http://openid.net/extensions/sreg/1.1</Type>
 			<Type>http://axschema.org/contact/email</Type>

@@ -1,9 +1,21 @@
 ﻿@using OpenIdProvider
 
 @{
+    var isEmail = (bool?)ViewData["isEmail"];
+    
     ViewData["Title"] = ViewData["title"];
 }
 
 <div class="success">
     <p>@ViewData["message"]</p>
 </div>
+
+@if (isEmail.HasValue && isEmail.Value)
+{
+    <div>
+        <p>
+            If you don't see this email in your inbox within 15 minutes, look for it in your junk-mail folder. 
+            If you find it there, please mark the email as Not Junk and add <code>@@stackexchange.com</code> to your address book.
+        </p>
+    </div>
+}

@@ -9,6 +9,8 @@ using Recaptcha;
 using System.Text;
 using System.IO;
 using System.Net;
+using DotNetOpenAuth.OpenId.Provider;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace OpenIdProvider
 {
@@ -372,6 +374,29 @@ namespace OpenIdProvider
                 action(item);
             }
             return source;
+        }
+
+        public static byte[] Serialize(this IAuthenticationRequest request)
+        {
+            byte[] bytes;
+            using (var stream = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(stream, request);
+
+                bytes = stream.ToArray();
+            }
+
+            return bytes;
+        }
+
+        public static IAuthenticationRequest DeSerialize(this IAuthenticationRequest ignored, byte[] serialized)
+        {
+            using (var stream = new MemoryStream(serialized))
+            {
+                var formatter = new BinaryFormatter();
+                return (IAuthenticationRequest)formatter.Deserialize(stream);
+            }
         }
     }
 }

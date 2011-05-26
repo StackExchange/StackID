@@ -56,15 +56,22 @@ namespace OpenIdProvider.Helpers
                         // Shouldn't ask people to trust us with these in the error logs
                         if (p.Equals("password", StringComparison.InvariantCultureIgnoreCase) || p.Equals("password2", StringComparison.InvariantCultureIgnoreCase))
                         {
+                            var obsfucated = "";
+
                             if (val.HasValue())
                             {
                                 for (int i = 0; i < val.Length; i++)
                                 {
-                                    val += "*";
+                                    obsfucated += "*";
                                 }
                             }
+
+                            Parameters[p] = obsfucated;
                         }
-                        Parameters[p] = val;
+                        else
+                        {
+                            Parameters[p] = val;
+                        }
                     }
 
                     ReceivedCookies = new Dictionary<string, string>();
@@ -167,10 +174,14 @@ namespace OpenIdProvider.Helpers
 
             foreach (var file in toLoad)
             {
-                var error = JsonConvert.DeserializeObject<Error>(File.ReadAllText(file));
-                error.Location = file;
+                try
+                {
+                    var error = JsonConvert.DeserializeObject<Error>(File.ReadAllText(file));
+                    error.Location = file;
 
-                ret.Add(error);
+                    ret.Add(error);
+                }
+                catch { /* Don't care */ }
             }
 
             return ret;

@@ -106,6 +106,12 @@ namespace OpenIdProvider.Helpers
         {
         }
 
+        public RouteAttribute(string url, bool acceptAll) 
+            : this(url)
+        {
+            AcceptAll = acceptAll;
+        }
+
         public RouteAttribute(string url, AuthorizedUser users)
             : this(url, "", null, RoutePriority.Default, users)
         {
@@ -141,6 +147,11 @@ namespace OpenIdProvider.Helpers
 
             if (AuthorizedUsers == 0) throw new ArgumentException("users must permit at least one class of user to reach this route");
         }
+
+        /// <summary>
+        /// Accept *everything*, GET POST XSRF whatever, and pass through to code.
+        /// </summary>
+        public bool AcceptAll { get; set; }
 
         /// <summary>
         /// A bitmask of the user types permitted to access a given route
@@ -185,6 +196,8 @@ namespace OpenIdProvider.Helpers
         /// </summary>
         public override bool IsValidForRequest(ControllerContext cc, MethodInfo mi)
         {
+            if (AcceptAll) return true;
+
             var verbCheck = !AcceptVerbs.HasValue || (new AcceptVerbsAttribute(AcceptVerbs.Value).IsValidForRequest(cc, mi));
 
             var xsrfCheck = true;

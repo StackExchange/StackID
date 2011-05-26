@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BookSleeve</name>
+    </assembly>
+    <members>
+        <member name="M:BookSleeve.RedisConnectionBase.Wait``1(System.Threading.Tasks.Task{``0})">
+            <summary>
+            If the task is not yet completed, blocks the caller until completion up to a maximum of SyncTimeout milliseconds.
+            Once a task is completed, the result is returned.
+            </summary>
+            <param name="task">The task to wait on</param>
+            <returns>The return value of the task.</returns>
+            <exception cref="T:System.TimeoutException">If SyncTimeout milliseconds is exceeded.</exception>
+        </member>
+        <member name="M:BookSleeve.RedisConnectionBase.Wait(System.Threading.Tasks.Task)">
+            <summary>
+            If the task is not yet completed, blocks the caller until completion up to a maximum of SyncTimeout milliseconds.
+            </summary>
+            <param name="task">The task to wait on</param>
+            <exception cref="T:System.TimeoutException">If SyncTimeout milliseconds is exceeded.</exception>
+            <remarks>If an exception is throw, it is extracted from the AggregateException (unless multiple exceptions are found)</remarks>
+        </member>
+        <member name="M:BookSleeve.RedisConnectionBase.WaitAll(System.Threading.Tasks.Task[])">
+            <summary>
+            Waits for all of a set of tasks to complete, up to a maximum of SyncTimeout milliseconds.
+            </summary>
+            <param name="tasks">The tasks to wait on</param>
+            <exception cref="T:System.TimeoutException">If SyncTimeout milliseconds is exceeded.</exception>
+        </member>
+        <member name="M:BookSleeve.RedisConnectionBase.WaitAny(System.Threading.Tasks.Task[])">
+            <summary>
+            Waits for any of a set of tasks to complete, up to a maximum of SyncTimeout milliseconds.
+            </summary>
+            <param name="tasks">The tasks to wait on</param>
+            <returns>The index of a completed task</returns>
+            <exception cref="T:System.TimeoutException">If SyncTimeout milliseconds is exceeded.</exception>        
+        </member>
+        <member name="M:BookSleeve.RedisConnectionBase.ContinueWith``1(System.Threading.Tasks.Task{``0},System.Action{System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Add a continuation (a callback), to be executed once a task has completed
+            </summary>
+            <param name="task">The task to add a continuation to</param>
+            <param name="action">The continuation to perform once completed</param>
+            <returns>A new task representing the composed operation</returns>
+        </member>
+        <member name="M:BookSleeve.RedisConnectionBase.ContinueWith(System.Threading.Tasks.Task,System.Action{System.Threading.Tasks.Task})">
+            <summary>
+            Add a continuation (a callback), to be executed once a task has completed
+            </summary>
+            <param name="task">The task to add a continuation to</param>
+            <param name="action">The continuation to perform once completed</param>
+            <returns>A new task representing the composed operation</returns>
+        </member>
+        <member name="T:BookSleeve.BlockingQueue`1">
+            <summary>
+            Implements a thread-safe queue for use in a producer/consumer scenario
+            </summary>
+            <remarks> This is based on http://stackoverflow.com/questions/530211/creating-a-blocking-queuet-in-net/530228#530228 </remarks>
+        </member>
+        <member name="M:BookSleeve.RedisConnection.Persist(System.Int32,System.String,System.Boolean)">
+            <summary>
+            Removes the expiry against a key
+            </summary>
+            <returns>True if the expiry was removed (it existed with expiry), else False</returns>
+            <remarks>Available with 2.1.2 and above only</remarks>
+        </member>
+        <member name="M:BookSleeve.RedisConnection.RandomKey(System.Int32,System.Boolean)">
+            <summary>
+            Obtains a random key from the database, or null otherwise (empty database)
+            </summary>
+        </member>
+        <member name="M:BookSleeve.RedisConnection.Rename(System.Int32,System.String,System.String,System.Boolean)">
+            <summary>
+            Renames a key in the database, overwriting any existing value; the source key must exist and be different to the destination.
+            </summary>
+        </member>
+        <member name="M:BookSleeve.RedisConnection.RenameIfNotExists(System.Int32,System.String,System.String,System.Boolean)">
+            <summary>
+            Renames a key in the database, overwriting any existing value; the source key must exist and be different to the destination.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:BookSleeve.RedisConnection.Remove(System.Int32,System.String,System.Boolean)" -->
+        <!-- Badly formed XML comment ignored for member "M:BookSleeve.RedisConnection.Remove(System.Int32,System.String[],System.Boolean)" -->
+        <member name="M:BookSleeve.RedisConnection.Move(System.Int32,System.String,System.Int32)">
+            <summary>
+            Moves a key between databases; the key must exist at the source and not exist at the destination.
+            </summary>
+            <returns>True if successful; false otherwise (didn't exist at source, or already existed at destination).</returns>
+        </member>
+    </members>
+</doc>

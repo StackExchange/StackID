@@ -18,11 +18,8 @@
     <form method="post" action="/affiliate/register/submit" autocomplete="off">
         <table class="position-table">
             <tr>
-                <td>
-                    <label for="filter">Site Address Filter</label>
-                </td>
                 <td class="input-td">
-                    <input type="text" name="filter" id="filter" value="@ViewData["filter"]" /><br />
+                    <input type="text" name="filter" id="filter" value="@ViewData["filter"]" maxlength="100" /><br />
                     <span class="form-help">example.com or sub.*.example.com</span>
                 </td>
             </tr>

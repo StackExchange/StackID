@@ -16,11 +16,8 @@
     <form method="post" action="/account/recovery/submit" autocomplete="off">
         <table class="position-table">
             <tr>
-                <td>
-                    <label for="email">Email</label>
-                </td>
                 <td class="input-td">
-                    <input type="text" name="email" id="email" />
+                    <input type="text" name="email" id="email" maxlength="100" />
                     <span class="form-help">@("name@example.com")</span>
                 </td>
             </tr>

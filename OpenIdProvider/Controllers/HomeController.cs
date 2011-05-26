@@ -39,6 +39,9 @@ namespace OpenIdProvider.Controllers
                 return View("Xrds", null);
             }
 
+            // Don't make logged in users waste a click
+            if (Current.LoggedInUser != null) return SafeRedirect((Func<ActionResult>)(new UserController()).ViewUser);
+
             return View();
         }
 

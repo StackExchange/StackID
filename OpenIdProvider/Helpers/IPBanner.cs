@@ -5,6 +5,7 @@ using System.Web;
 using System.Collections.Concurrent;
 using OpenIdProvider.Models;
 using System.Data.SqlTypes;
+using ProtoBuf;
 
 namespace OpenIdProvider.Helpers
 {
@@ -20,12 +21,16 @@ namespace OpenIdProvider.Helpers
             public DateTime ExpirationDate;
         }
 
-        class Infraction
+        [ProtoContract]
+        public class Infraction
         {
             public enum InfractionType { Login, XSRF, Recovery }
 
+            [ProtoMember(1)]
             public InfractionType Type;
+            [ProtoMember(2)]
             public int? RelatedId;
+            [ProtoMember(3)]
             public DateTime Expires;
         }
 

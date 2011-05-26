@@ -96,11 +96,11 @@ namespace OpenIdProvider.Controllers
                             failure = true;
                         }
 
-
-                        if(!VerifySignature(@params, out CurrentAffiliate))
+                        string sigError;
+                        if(!VerifySignature(@params, out CurrentAffiliate, out sigError))
                         {
                             failure = true;
-                            failureReason = "Signature invalid";
+                            failureReason = "Signature invalid - " + sigError;
                         }
                     }
                 }
@@ -133,13 +133,19 @@ namespace OpenIdProvider.Controllers
                 return;
             }
 
+            var formCanaryCookie = new HttpCookie("canary", "1");
+            formCanaryCookie.HttpOnly = false; // the whole point is to check for this via javascript
+            formCanaryCookie.Expires = Current.Now + TimeSpan.FromMinutes(1);
+
+            filterContext.HttpContext.Response.Cookies.Add(formCanaryCookie);
+
             base.OnActionExecuting(filterContext);
         }
 
         /// <summary>
         /// Returns true if the parameters contain a valid signature for a request.
         /// </summary>
-        private static bool VerifySignature(NameValueCollection @params, out Affiliate validFor)
+        private static bool VerifySignature(NameValueCollection @params, out Affiliate validFor, out string failureReason)
         {
             validFor = null;
 
@@ -148,13 +154,16 @@ namespace OpenIdProvider.Controllers
 
             if (!int.TryParse(@params["affId"], out affId))
             {
+                failureReason = "No affId";
                 return false;
             }
 
             var nonce = @params["nonce"].ToString();
 
-            if (!Nonces.IsValid(nonce))
+            string nonceMsg;
+            if (!Nonces.IsValid(nonce, out nonceMsg))
             {
+                failureReason = "Invalid Nonce [" + nonceMsg + "]";
                 return false;
             }
 
@@ -162,6 +171,7 @@ namespace OpenIdProvider.Controllers
 
             if (affiliate == null)
             {
+                failureReason = "Could not find affiliate";
                 return false;
             }
 
@@ -173,6 +183,7 @@ namespace OpenIdProvider.Controllers
 
             if (authCode.HasValue() && !affiliate.ConfirmSignature(authCode, Current.RequestUri.AbsolutePath, copy))
             {
+                failureReason = "Affiliate signature confirmation failed";
                 return false;
             }
 
@@ -180,6 +191,7 @@ namespace OpenIdProvider.Controllers
 
             Nonces.MarkUsed(nonce);
 
+            failureReason = null;
             return true;
         }
 
@@ -190,13 +202,23 @@ namespace OpenIdProvider.Controllers
         /// to *this* switcher and bypass all the affiliate checking stuff.
         /// </summary>
         [Route("affiliate/form/switch")]
-        public ActionResult SwitchAffiliateForms(string to, string nonce, string authCode, string affId, string background, string color)
+        public ActionResult SwitchAffiliateForms(string to, string nonce, string authCode, string affId, string background, string color, string callback, string newCookie)
         {
-            var shouldMatch = Current.MakeAuthCode(new { nonce, to, affId, background, color });
+            var shouldMatch = Current.MakeAuthCode(new { nonce, to, affId, background, color, callback, newCookie });
 
             if (shouldMatch != authCode) return GenericSecurityError();
 
             Nonces.MarkUsed(nonce);
+
+            bool addCookie;
+            if (bool.TryParse(newCookie, out addCookie) && addCookie)
+            {
+                Current.GenerateAnonymousXSRFCookie();
+
+                // Pull the callback forward into the new cookie
+                var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
+                Current.AddToCache(CallbackKey(cookie), callback, TimeSpan.FromMinutes(15));
+            }
 
             switch (to)
             {
@@ -208,6 +230,33 @@ namespace OpenIdProvider.Controllers
             }
 
             return NotFound();
+        }
+
+        /// <summary>
+        /// Generate a link to switch to a specific form
+        /// </summary>
+        private string SwitchLink(string to, string affId, string background, string color, string callback, bool newCookie)
+        {
+            var nonce = Nonces.Create();
+            var authCode = Current.MakeAuthCode(new { nonce, to, affId, background, color, callback, newCookie = newCookie.ToString() });
+
+            var @switch =
+                UnsafeRedirect(
+                    "affiliate/form/switch",
+                    new
+                    {
+                        to,
+                        nonce,
+                        authCode,
+                        affId,
+                        background,
+                        color,
+                        callback,
+                        newCookie = newCookie.ToString()
+                    }
+                );
+
+            return Current.Url(@switch.Url);
         }
 
         private static Regex OnLoadMessageRegex = new Regex(@"[a-z]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -252,29 +301,15 @@ namespace OpenIdProvider.Controllers
             // We need this check, as we call this action directly bypassing the RouteAttribute check as well
             if (Current.LoggedInUser != null) return NotFound();
 
+            var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
+            var callback = Current.GetFromCache<string>(CallbackKey(cookie));
+
             var affId = ViewData["affId"].ToString();
-
-            var nonce = Nonces.Create();
-            var to = "login";
-            var authCode = Current.MakeAuthCode(new { nonce, to, affId, background, color  });
-
-            var @switch =
-                SafeRedirect(
-                    (Func<string, string, string, string, string, string, ActionResult>)SwitchAffiliateForms,
-                    new
-                    {
-                        to = "login",
-                        nonce,
-                        authCode,
-                        affId,
-                        background,
-                        color
-                    }
-                );
-
-            var switchLink = Current.Url(@switch.Url);
+            var switchLink = SwitchLink("login", affId, background, color, callback, false);
+            var refreshLink = SwitchLink("signup", affId, background, color, callback,  true);
 
             ViewData["SwitchUrl"] = switchLink;
+            ViewData["RefreshUrl"] = refreshLink;
 
             ViewData["OnLoad"] = onLoad;
             ViewData["Background"] = background;
@@ -295,6 +330,8 @@ namespace OpenIdProvider.Controllers
                 ViewData["error_message"] = "Email is required";
                 ViewData["affId"] = CurrentAffiliate.Id;
                 ViewData["realname"] = realname;
+                ViewData["password"] = password;
+                ViewData["password2"] = password2;
 
                 return SignupIFrame(null, background, color);
             }
@@ -306,6 +343,8 @@ namespace OpenIdProvider.Controllers
                 ViewData["affId"] = CurrentAffiliate.Id;
                 ViewData["realname"] = realname;
                 ViewData["email"] = email;
+                ViewData["password"] = password;
+                ViewData["password2"] = password2;
 
                 return SignupIFrame(null, background, color);
             }
@@ -319,6 +358,8 @@ namespace OpenIdProvider.Controllers
                 ViewData["affId"] = CurrentAffiliate.Id;
                 ViewData["email"] = email;
                 ViewData["realname"] = realname;
+                ViewData["password"] = password;
+                ViewData["password2"] = password2;
 
                 return SignupIFrame(null, background, color);
             }
@@ -335,6 +376,8 @@ namespace OpenIdProvider.Controllers
                 ViewData["affId"] = CurrentAffiliate.Id;
                 ViewData["email"] = email;
                 ViewData["realname"] = realname;
+                ViewData["password"] = password;
+                ViewData["password2"] = password2;
 
                 return SignupIFrame(null, background, color);
             }
@@ -373,7 +416,7 @@ namespace OpenIdProvider.Controllers
             ViewData["Background"] = background;
             ViewData["Color"] = color;
 
-            return Success("Registration Email Sent to " + email, "Check your email for the link to complete your registration.");
+            return SuccessEmail("Registration Email Sent to " + email, "Check your email for the link to complete your registration.");
         }
 
         /// <summary>
@@ -437,28 +480,15 @@ namespace OpenIdProvider.Controllers
         {
             if (Current.LoggedInUser != null) return NotFound();
 
+            var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
+            var callback = Current.GetFromCache<string>(CallbackKey(cookie));
+
             var affId = ViewData["affId"].ToString();
-            var nonce = Nonces.Create();
-            var to = "signup";
-            var authCode = Current.MakeAuthCode(new { nonce, to, affId, background, color });
-
-            var @switch =
-                SafeRedirect(
-                    (Func<string, string, string, string, string, string, ActionResult>)SwitchAffiliateForms,
-                    new
-                    {
-                        to = "signup",
-                        nonce,
-                        authCode,
-                        affId,
-                        background,
-                        color
-                    }
-                );
-
-            var switchLink = Current.Url(@switch.Url);
+            var switchLink = SwitchLink("signup", affId, background, color, callback, false);
+            var refreshLink = SwitchLink("login", affId, background, color, callback, true);
 
             ViewData["SwitchUrl"] = switchLink;
+            ViewData["RefreshUrl"] = refreshLink;
 
             ViewData["OnLoad"] = onLoad;
             ViewData["Background"] = background;
@@ -507,7 +537,7 @@ namespace OpenIdProvider.Controllers
 
                 return LoginIFrame(null, background, color);
             }
-                        
+
             var callback = Current.GetFromCache<string>(CallbackKey(cookie));
 
             Current.RemoveFromCache(CallbackKey(cookie));
@@ -545,6 +575,114 @@ namespace OpenIdProvider.Controllers
                 callback +
                 (callback.Contains('?') ? '&' : '?') +
                 "openid_identifier=" + Server.UrlEncode(identifier.AbsoluteUri);
+        }
+
+        /// <summary>
+        /// Affiliates can use this route to trigger us into sending an email to a user who forgot their
+        /// password/account information.
+        /// 
+        /// Basically, looks up a user by email; and if that user has auth'd to the affiliate in question before,
+        /// sends them an email to reset their password.
+        /// 
+        /// After following through with the password reset, the user will be redirected to whatever
+        /// callback the affiliate provided (assuming that it is a kosher callback).
+        /// </summary>
+        [Route("affiliate/form/password-recovery")]
+        public ActionResult AccountRecovery(string callback, string email)
+        {
+            if (!CurrentAffiliate.IsValidCallback(callback)) return GenericSecurityError();
+
+            Uri callbackUri;
+            if(!Uri.TryCreate(callback, UriKind.Absolute, out callbackUri)) return GenericSecurityError();
+
+            var user = Models.User.FindUserByEmail(email);
+
+            if(user == null) return NotFound();
+
+            // Don't allow just any affiliate to send these e-mails, only those that the user has
+            //   auth'd to sometime in the past.
+            if (!user.HasGrantedAuthorization(callbackUri.Host)) return GenericSecurityError();
+
+            var now = Current.Now;
+            var token = Current.UniqueId().ToString();
+            var toInsert =
+                new PasswordReset
+                {
+                    CreationDate = now,
+                    TokenHash = Current.WeakHash(token),
+                    UserId = user.Id
+                };
+
+            Current.WriteDB.PasswordResets.InsertOnSubmit(toInsert);
+            Current.WriteDB.SubmitChanges();
+
+            var authCode = Current.MakeAuthCode(new { token, callback });
+
+            var toReset =
+                SafeRedirect
+                (
+                    (Func<string, string, string, ActionResult>)(new AccountController()).NewPassword,
+                    new
+                    {
+                        token,
+                        authCode,
+                        callback
+                    }
+                );
+
+            var resetLink = Current.Url(toReset.Url);
+
+            var affiliateLink = callbackUri.Scheme + "://" + callbackUri.Host;
+            var affiliateName = callbackUri.Host;
+
+            var deAuthCode = Current.MakeAuthCode(new { email, affHost = callbackUri.Host });
+
+            var toDeAuth =
+                SafeRedirect
+                (
+                    (Func<string, string, string, ActionResult>)(new AccountController()).DeAuthAffiliate,
+                    new
+                    {
+                        email,
+                        affHost = callbackUri.Host,
+                        authCode = deAuthCode
+                    }
+                );
+
+            var deAuthLink = Current.Url(toDeAuth.Url);
+
+            if (!Current.Email.SendEmail(email, Email.Template.ResetPasswordAffiliate, new { RecoveryLink = resetLink, AffiliateLink = affiliateLink, AffiliateName = affiliateName, DeAuthLink = deAuthLink }))
+            {
+                return IrrecoverableError("Could not send email", "This error has been logged");
+            }
+
+            return SuccessEmail("Email sent to " + email, "Check your email and follow the link to recover your account");
+        }
+
+        /// <summary>
+        /// Cause the user to be logged out (if they're logged in at all), provided
+        /// that the affiliate has been authenticated in the past
+        /// </summary>
+        [Route("affiliate/form/logout")]
+        public ActionResult TriggerLogout(string callback)
+        {
+            // Only available to affiliates, so they better not be redirecting you somewhere weird
+            if (!CurrentAffiliate.IsValidCallback(callback)) return GenericSecurityError();
+
+            Uri uri;
+            if (!Uri.TryCreate(callback, UriKind.Absolute, out uri)) return GenericSecurityError();
+
+            // Not logged in, just hop where-ever
+            if (Current.LoggedInUser == null) return Redirect(callback);
+
+            // If you *are* logged in, only affiliates who you've granted creds to need to be able to log you off
+            if (!Current.LoggedInUser.HasGrantedAuthorization(uri.Host)) return GenericSecurityError();
+
+            var writeUser = Current.WriteDB.Users.Single(u => u.Id == Current.LoggedInUser.Id);
+            writeUser.Logout(Current.Now);
+
+            // Need that redirect bounce page so you can
+            return View("Redirect", (object)callback);
         }
     }
 }

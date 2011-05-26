@@ -11,11 +11,8 @@ namespace OpenIdProvider.Helpers
     /// </summary>
     public static class Nonces
     {
-        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        private static ConcurrentDictionary<string, DateTime> Used = new ConcurrentDictionary<string, DateTime>();
-        private static DateTime LastCull = Current.Now;
-
+        public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        
         /// <summary>
         /// Extracts the encoded creation date, and validates the form.
         /// </summary>
@@ -61,42 +58,45 @@ namespace OpenIdProvider.Helpers
         /// <summary>
         /// Returns true if this nonce is valid (ie. parsable, and has not been used yet).
         /// </summary>
-        public static bool IsValid(string nonce)
+        public static bool IsValid(string nonce, out string failureReason)
         {
             DateTime created;
-            if (!Parse(nonce, out created)) return false;
+            if (!Parse(nonce, out created))
+            {
+                failureReason = "Could not parse (" + nonce + ")";
+                return false;
+            }
 
             var dif = (Current.Now - created).TotalMinutes;
 
             // 10 minute total drift permissable
-            return (Math.Abs(dif) < 5);
+            if (Math.Abs(dif) >= 5)
+            {
+                failureReason = "Too much drift (" + dif + ")";
+                return false;
+            }
+
+            // Cannot have already used this nonce
+            if (Current.GetFromCache<string>("nonce-" + nonce) != null)
+            {
+                failureReason = "Re-used nonce (" + nonce + ")";
+                return false;
+            }
+
+            failureReason = null;
+            return true;
         }
 
         /// <summary>
         /// Marks the given nonce as unusable.
         /// </summary>
-        /// <param name="nonce"></param>
         public static void MarkUsed(string nonce)
         {
             DateTime created;
 
             if (!Parse(nonce, out created)) throw new InvalidOperationException("Invalid nonce passed [" + nonce + "]");
 
-                Used[nonce] = created;
-
-            var now = Current.Now;
-            DateTime ignored;
-
-            if (now - LastCull > TimeSpan.FromMinutes(10))
-            {
-                LastCull = now;
-                var toCull = Used.Where(v => Math.Abs((now - v.Value).TotalMinutes) > 5).Select(v => v.Key);
-                foreach (var c in toCull)
-                {
-                    // Don't care if this succeeds, just do it
-                    Used.TryRemove(c, out ignored);
-                }
-            }
+            Current.AddToCache("nonce-" + nonce, "", TimeSpan.FromMinutes(10));
         }
     }
 }

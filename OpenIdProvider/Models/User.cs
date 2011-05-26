@@ -361,6 +361,8 @@ namespace OpenIdProvider.Models
         /// </summary>
         public void GrantAuthorization(string host)
         {
+            host = host.ToLowerInvariant();
+
             var db = Current.WriteDB;
 
             var newGrant = new UserSiteAuthorization
@@ -372,6 +374,26 @@ namespace OpenIdProvider.Models
 
             db.UserSiteAuthorizations.InsertOnSubmit(newGrant);
             db.SubmitChanges();
+        }
+
+        /// <summary>
+        /// Revokes authorization to the given host, such
+        /// that subsequent calls to HasGrantedAuthorization with the same host
+        /// will return false.
+        /// </summary>
+        public void RemoveAuthorization(string host)
+        {
+            host = host.ToLowerInvariant();
+
+            var db = Current.WriteDB;
+
+            var existingGrant = db.UserSiteAuthorizations.SingleOrDefault(g => g.UserId == this.Id && g.SiteHostAddress == host);
+
+            if (existingGrant != null)
+            {
+                db.UserSiteAuthorizations.DeleteOnSubmit(existingGrant);
+                db.SubmitChanges();
+            }
         }
 
         /// <summary>
@@ -569,12 +591,14 @@ namespace OpenIdProvider.Models
 
             Current.WriteDB.UserHistory.InsertOnSubmit(changeEvent);
 
+            var thisUser = Current.WriteDB.Users.Single(u => u.Id == this.Id);
+
             string salt;
             var pwdHash = Current.SecureHash(newPassword, out salt);
 
-            PasswordSalt = salt;
-            PasswordHash = pwdHash;
-            LastActivityDate = now;
+            thisUser.PasswordSalt = salt;
+            thisUser.PasswordHash = pwdHash;
+            thisUser.LastActivityDate = now;
 
             Current.WriteDB.SubmitChanges();
         }

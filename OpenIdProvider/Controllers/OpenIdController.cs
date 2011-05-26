@@ -15,9 +15,99 @@ using DotNetOpenAuth.OpenId.Extensions.SimpleRegistration;
 using DotNetOpenAuth.OpenId.Extensions.AttributeExchange;
 
 using OpenIdProvider.Models;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using ProtoBuf;
 
 namespace OpenIdProvider.Controllers
 {
+    /// <summary>
+    /// Let's us run the provider on a cluster of servers.
+    /// 
+    /// Heavily inspired by 
+    /// https://knowledgeexchange.svn.codeplex.com/svn/binaries/DotNetOpenAuth-3.2.2.9257/Samples/OpenIdProviderWebForms/Code/CustomStore.cs
+    /// by Andrew Arnott
+    /// </summary>
+    class ProviderStore : IProviderApplicationStore
+    {
+        [ProtoContract]
+        class Wrapper
+        {
+            [ProtoMember(1)]
+            public DateTime Expires { get; set; }
+
+            [ProtoMember(2)]
+            public byte[] PrivateData { get; set; }
+
+            [ProtoMember(3)]
+            public string Handle { get; set; }
+        }
+
+        public void StoreAssociation(AssociationRelyingPartyType distinguishingFactor, Association association)
+        {
+            var keyWithoutHandle = "assoc-" + distinguishingFactor.ToString();
+            var keyWithHandle = keyWithoutHandle + "-" + association.Handle;
+
+            var expireIn = association.Expires - Current.Now;
+
+            var @private = association.SerializePrivateData();
+
+            var newRecord = new Wrapper
+            {
+                Expires = association.Expires,
+                PrivateData = @private,
+                Handle = association.Handle
+            };
+
+            Current.AddToCache(keyWithoutHandle, newRecord, expireIn);
+            Current.AddToCache(keyWithHandle, newRecord, expireIn);
+        }
+
+        public Association GetAssociation(AssociationRelyingPartyType distinguishingFactor, string handle)
+        {
+            var keyWithHandle = "assoc-" + distinguishingFactor.ToString() + "-" + handle;
+
+            var wrapper = Current.GetFromCache<Wrapper>(keyWithHandle);
+
+            if (wrapper == null) return null;
+
+            return Association.Deserialize(wrapper.Handle, wrapper.Expires, wrapper.PrivateData);
+        }
+
+        public Association GetAssociation(AssociationRelyingPartyType distinguishingFactor, SecuritySettings securityRequirements)
+        {
+            var keyWithoutHandle = "assoc-" + distinguishingFactor.ToString();
+
+            var wrapper = Current.GetFromCache<Wrapper>(keyWithoutHandle);
+
+            if(wrapper == null) return null;
+
+            return Association.Deserialize(wrapper.Handle, wrapper.Expires, wrapper.PrivateData);
+        }
+
+        public bool RemoveAssociation(AssociationRelyingPartyType distinguishingFactor, string handle)
+        {
+            var keyWithoutHandle = "assoc-" + distinguishingFactor.ToString();
+            var keyWithHandle = keyWithoutHandle + "-" + handle;
+
+            // lack of short-circuit here is important, both these calls need to run
+            return Current.RemoveFromCache(keyWithoutHandle) | Current.RemoveFromCache(keyWithHandle);
+        }
+
+        public bool StoreNonce(string context, string nonce, DateTime timestampUtc)
+        {
+            var longGoodFor = (timestampUtc - Nonces.UnixEpoch);
+
+            var key = "assoc-nonce-" + context + "-" + nonce + "-" + (long)longGoodFor.TotalSeconds;
+
+            if (Current.GetFromCache<string>(key) != null) return false;
+
+            Current.AddToCache(key, "", longGoodFor);
+
+            return true;
+        }
+    }
+
     /// <summary>
     /// Handles the nitty gritty of the actual OpenId process.
     /// 
@@ -25,7 +115,7 @@ namespace OpenIdProvider.Controllers
     /// </summary>
     public class OpenIdController : ControllerBase
     {
-        private DotNetOpenAuth.OpenId.Provider.OpenIdProvider OpenIdProvider = new DotNetOpenAuth.OpenId.Provider.OpenIdProvider();
+        private DotNetOpenAuth.OpenId.Provider.OpenIdProvider OpenIdProvider = new DotNetOpenAuth.OpenId.Provider.OpenIdProvider(new ProviderStore());
 
         /// <summary>
         /// Common code to stash an authRequest behind in a session.
@@ -33,9 +123,29 @@ namespace OpenIdProvider.Controllers
         private static string CreationSession(IAuthenticationRequest authRequest)
         {
             var session = Current.UniqueId().ToString();
-            Current.AddToCache(session, authRequest, TimeSpan.FromMinutes(15));
+            Current.AddToCache(session, authRequest.Serialize(), TimeSpan.FromMinutes(15));
 
             return session;
+        }
+
+        /// <summary>
+        /// Returns true if we got passed some localId that is garbage.
+        /// 
+        /// Used to detect when a relying party is sort of screwing things up, 
+        /// so we can fix things up for them.
+        /// </summary>
+        private bool NobodyClaims(string localId)
+        {
+            Uri uri;
+            if (!Uri.TryCreate(localId, UriKind.Absolute, out uri)) return false;
+
+            var path = uri.AbsolutePath.ToLower();
+
+            if (!path.StartsWith("/user/")) return false;
+
+            var id = path.Substring("/user/".Length);
+
+            return Models.User.GetFromProviderId(id) == null;
         }
 
         /// <summary>
@@ -46,11 +156,25 @@ namespace OpenIdProvider.Controllers
         public ActionResult Provider()
         {
             IRequest request = OpenIdProvider.GetRequest();
+
             if (request != null)
             {
                 var authRequest = request as IAuthenticationRequest;
                 if (authRequest != null)
                 {
+                    // Hack: loads of people seem to jack up discovery and send the claimed id as the local id
+                    //       or maybe that's to "spec", for some definition of the OpenID Spec...
+                    if (Current.LoggedInUser != null)
+                    {
+                        var localId = authRequest.LocalIdentifier;
+
+                        if (localId != null && NobodyClaims(localId.ToString()))
+                        {
+                            Current.LogException(new Exception("Rewrote [" + localId.ToString()+ "]"));
+                            authRequest.LocalIdentifier = Current.LoggedInUser.GetClaimedIdentifier();
+                        }
+                    }
+
                     var sendAssertion = Current.LoggedInUser != null &&
                         (authRequest.IsDirectedIdentity || this.UserControlsIdentifier(authRequest));
 
@@ -121,11 +245,22 @@ namespace OpenIdProvider.Controllers
         [Route("openid/resume", AuthorizedUser.LoggedIn)]
         public ActionResult ResumeAfterLogin(string session, string noPrompt)
         {
-            var authRequest = Current.GetFromCache<IAuthenticationRequest>(session);
+            var authRequestBytes = Current.GetFromCache<byte[]>(session);
 
-            if (authRequest == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+            if (authRequestBytes == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+
+            IAuthenticationRequest authRequest = null;
+            authRequest = authRequest.DeSerialize(authRequestBytes);
 
             Current.RemoveFromCache(session);
+
+            // HACK: fix up bad local ids sent from a relying party
+            var localId = authRequest.LocalIdentifier;
+            if (localId != null && NobodyClaims(localId.ToString()))
+            {
+                Current.LogException(new Exception("Rewrote [" + localId.ToString() + "]"));
+                authRequest.LocalIdentifier = Current.LoggedInUser.GetClaimedIdentifier();
+            }
 
             var sendAssertion = (authRequest.IsDirectedIdentity || this.UserControlsIdentifier(authRequest));
 
@@ -228,10 +363,10 @@ namespace OpenIdProvider.Controllers
 
                     authReq.AddResponseExtension(fetchResp);
                 }
-            }
 
-            var writeableUser = Current.WriteDB.Users.Single(u => u.Id == Current.LoggedInUser.Id);
-            writeableUser.AuthenticatedTo(Current.Now, authReq.Realm.Host);
+                var writeableUser = Current.WriteDB.Users.Single(u => u.Id == Current.LoggedInUser.Id);
+                writeableUser.AuthenticatedTo(Current.Now, authReq.Realm.Host);
+            }
 
             var req = OpenIdProvider.PrepareResponse(authReq).AsActionResult();
 

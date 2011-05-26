@@ -121,7 +121,7 @@ namespace OpenIdProvider.Controllers
         public ActionResult SendEmailVerficationToken(string email, string password, string password2, string realname)
         {
             if (email.IsNullOrEmpty()) return RecoverableError("Email is required", new { realname });
-            if (!Models.User.IsValidEmail(ref email)) return RecoverableError("Email is not valid", new { email, realname });
+            if (!Models.User.IsValidEmail(ref email)) return RecoverableError("Email is not valid", new { email, realname, password, password2 });
 
             // Check that the captcha succeeded
             string error;
@@ -133,7 +133,7 @@ namespace OpenIdProvider.Controllers
             string token, authCode;
             if (!PendingUser.CreatePendingUser(email, password, realname, out token, out authCode, out error))
             {
-                return RecoverableError(error, new { email, realname });
+                return RecoverableError(error, new { email, realname, password, password2 });
             }
 
             var toComplete = 
@@ -155,7 +155,7 @@ namespace OpenIdProvider.Controllers
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }
 
-            return Success("Registration Email Sent to " + email, "Check your email for the link to complete your registration");
+            return SuccessEmail("Registration Email Sent to " + email, "Check your email for the link to complete your registration");
         }
 
         /// <summary>
@@ -171,9 +171,14 @@ namespace OpenIdProvider.Controllers
 
             if (shouldMatch != authCode) return GenericSecurityError();
 
-            var t = Current.ReadDB.PendingUsers.SingleOrDefault(u => u.AuthCode == authCode && u.DeletionDate == null);
+            var t = Current.ReadDB.PendingUsers.SingleOrDefault(u => u.AuthCode == authCode);
 
             if (t == null) return IrrecoverableError("No Pending User Found", "We could not find a pending registration for you.  Please register again.");
+
+            if (t.DeletionDate != null)
+            {
+                return IrrecoverableError("Account already confirmed", "This account has already been created, log in to begin using it.");
+            }
 
             var now = Current.Now;
 
@@ -239,7 +244,7 @@ namespace OpenIdProvider.Controllers
 
             var toReset =
                 SafeRedirect(
-                    (Func<string, ActionResult>)NewPassword,
+                    (Func<string, string, string, ActionResult>)NewPassword,
                     new { token }
                 );
 
@@ -250,7 +255,7 @@ namespace OpenIdProvider.Controllers
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }
 
-            return Success("Password Recovery Email Sent to " + email, "Check your email for the link to reset your password.");
+            return SuccessEmail("Password Recovery Email Sent to " + email, "Check your email for the link to reset your password.");
         }
 
         /// <summary>
@@ -260,8 +265,27 @@ namespace OpenIdProvider.Controllers
         /// to a user via email.
         /// </summary>
         [Route("account/password-reset", AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)]
-        public ActionResult NewPassword(string token)
+        public ActionResult NewPassword(string token, string callback, string authCode)
         {
+            // Has a callback, indicating it is from an affiliate and thus needs to be validated
+            if (callback.HasValue())
+            {
+                var shouldMatch = Current.MakeAuthCode(new { token, callback });
+
+                if (shouldMatch != authCode)
+                {
+                    return GenericSecurityError();
+                }
+
+                ViewData["callback"] = callback;
+                ViewData["authCode"] = authCode;
+            }
+
+            if (token.HasValue())
+            {
+                ViewData["token"] = token;
+            }
+
             if (Current.LoggedInUser == null)
             {
                 var hash = Current.WeakHash(token);
@@ -271,8 +295,6 @@ namespace OpenIdProvider.Controllers
                 if (t == null) return IrrecoverableError("Password Reset Request Not Found", "We could not find a pending password reset request.");
 
                 Current.GenerateAnonymousXSRFCookie();
-
-                ViewData["token"] = token;
 
                 return View();
             }
@@ -318,11 +340,22 @@ namespace OpenIdProvider.Controllers
         /// Actually updates the user's password.
         /// </summary>
         [Route("account/password-reset/submit", HttpVerbs.Post, AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)]
-        public ActionResult SetNewPassword(string token, string password, string password2)
+        public ActionResult SetNewPassword(string token, string password, string password2, string callback, string authCode)
         {
+            // Has a callback, indicating it is from an affiliate and thus needs to be validated
+            if (callback.HasValue())
+            {
+                var shouldMatch = Current.MakeAuthCode(new { token, callback });
+
+                if (shouldMatch != authCode)
+                {
+                    return GenericSecurityError();
+                }
+            }
+
             var now = Current.Now;
             var success = Success("Password Reset", "Your password has been reset.");
-
+            
             if (Current.LoggedInUser == null)
             {
                 var hash = Current.WeakHash(token);
@@ -337,13 +370,37 @@ namespace OpenIdProvider.Controllers
 
                 user.Login(now);
 
-                return success;
+                if (callback.HasValue())
+                {
+                    var redirectUrl =
+                        callback +
+                        (callback.Contains('?') ? '&' : '?') +
+                        "openid_identifier=" + Server.UrlEncode(user.GetClaimedIdentifier().AbsoluteUri);
+
+                    return Redirect(redirectUrl);
+                }
+                else
+                {
+                    return success;
+                }
             }
 
             var ret = ChangePasswordAndSendEmail(password, password2, token, null, Current.LoggedInUser, now);
             if (ret != null) return ret;
 
-            return success;
+            if (callback.HasValue())
+            {
+                var redirectUrl =
+                    callback +
+                    (callback.Contains('?') ? '&' : '?') +
+                    "openid_identifier=" + Server.UrlEncode(Current.LoggedInUser.GetClaimedIdentifier().AbsoluteUri);
+
+                return Redirect(redirectUrl);
+            }
+            else
+            {
+                return success;
+            }
         }
 
         /// <summary>
@@ -358,9 +415,14 @@ namespace OpenIdProvider.Controllers
 
             if (shouldMatch != authCode) return GenericSecurityError();
 
-            var t = Current.ReadDB.PendingUsers.SingleOrDefault(u => u.AuthCode == authCode && u.DeletionDate == null);
+            var t = Current.ReadDB.PendingUsers.SingleOrDefault(u => u.AuthCode == authCode);
 
             if (t == null) return IrrecoverableError("No Pending User Found", "We could not find a pending registration for you.  Please register again.");
+
+            if (t.DeletionDate != null)
+            {
+                return IrrecoverableError("Account already confirmed", "This account has already been created, log in to begin using it.");
+            }
 
             var now = Current.Now;
 
@@ -406,9 +468,12 @@ namespace OpenIdProvider.Controllers
         {
             if (!session.HasValue()) return IrrecoverableError("Could Not Find Pending Authentication Request", "No session was provided.");
 
-            var authRequest = Current.GetFromCache<IAuthenticationRequest>(session);
+            var authRequestBytes = Current.GetFromCache<byte[]>(session);
 
-            if (authRequest == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+            if (authRequestBytes == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+
+            IAuthenticationRequest authRequest = null;
+            authRequest = authRequest.DeSerialize(authRequestBytes);
 
             ViewData["session"] = session;
 
@@ -426,9 +491,12 @@ namespace OpenIdProvider.Controllers
         {
             if (!session.HasValue()) return IrrecoverableError("Could Not Find Pending Authentication Request", "No session was provided.");
 
-            var authRequest = Current.GetFromCache<IAuthenticationRequest>(session);
+            var authRequestBytes = Current.GetFromCache<byte[]>(session);
 
-            if (authRequest == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+            if (authRequestBytes == null) return IrrecoverableError("Could Not Find Pending Authentication Request", "We were unable to find the pending authentication request, and cannot resume login.");
+
+            IAuthenticationRequest authRequest = null;
+            authRequest = authRequest.DeSerialize(authRequestBytes);
 
             Current.LoggedInUser.GrantAuthorization(authRequest.Realm.Host);
 
@@ -440,6 +508,56 @@ namespace OpenIdProvider.Controllers
                         session
                     }
                 );
+        }
+
+        /// <summary>
+        /// De-authorize an affiliate.
+        /// 
+        /// We don't link this in the UI, as its the kind of bogus account management you shouldn't
+        /// have to deal with.  We *do*, however, include it in any affiliate triggered transmissions
+        /// so users can stop affiliates from spamming them.
+        /// </summary>
+        [Route("account/de-auth")]
+        public ActionResult DeAuthAffiliate(string email, string affHost, string authCode)
+        {
+            var shouldMatch = Current.MakeAuthCode(new { email, affHost });
+
+            if (shouldMatch != authCode) return GenericSecurityError();
+
+            if (Current.LoggedInUser == null)
+            {
+                Current.GenerateAnonymousXSRFCookie();
+            }
+
+            ViewData["email"] = email;
+            ViewData["affHost"] = affHost;
+            ViewData["authCode"] = authCode;
+
+            return View();
+        }
+
+        /// <summary>
+        /// Handle the submission from /account/de-auth .
+        /// 
+        /// Removes the affiliate grant.
+        /// </summary>
+        [Route("account/de-auth/submit", HttpVerbs.Post)]
+        public ActionResult HandleDeAuthAffiliate(string email, string affHost, string authCode)
+        {
+            var shouldMatch = Current.MakeAuthCode(new { email, affHost });
+
+            if (shouldMatch != authCode) return GenericSecurityError();
+
+            var user = Current.LoggedInUser ?? Models.User.FindUserByEmail(email);
+
+            if (user == null)
+            {
+                return IrrecoverableError("Could not find user", "No user record found.");
+            }
+
+            user.RemoveAuthorization(affHost);
+
+            return Success("You have revoked " + affHost + "'s authorization", "They will be unable to contact you, and must prompt again for authorization to access your information.");
         }
     }
 }

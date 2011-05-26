@@ -72,4 +72,7 @@ namespace OpenIdProvider.Models
         [AllowNonPostColumnUpdate]
         public DateTime? DeletionDate { get; set; }
     }
+
+    [AllowNonPostInsert]
+    public partial class PasswordReset { }
 }

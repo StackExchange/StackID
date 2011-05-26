@@ -15,11 +15,11 @@ namespace OpenIdProvider
             routes.MapRoute("ping", new { controller = "Monitoring", action = "Ping" });
             routes.MapRoute("report", new { controller = "Monitoring", action = "Report" });
 
-            // any controller methods that are decorated with our attribute will be registered
-            Helpers.RouteAttribute.MapDecoratedRoutes(routes);
-
             // We need to opt out of our POST/GET semantic magic, so doing this route RAW
             routes.MapRoute("openid/provider", new { controller = "OpenId", action = "Provider" });
+
+            // any controller methods that are decorated with our attribute will be registered
+            Helpers.RouteAttribute.MapDecoratedRoutes(routes);
 
             // MUST be the last route as a catch-all!
             routes.MapRoute("{*url}", new { controller = "Home", action = "NotFound" });

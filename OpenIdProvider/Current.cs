@@ -15,6 +15,8 @@ using System.Globalization;
 using System.Web.Configuration;
 using System.Web.Mvc;
 using System.Reflection;
+using BookSleeve;
+using ProtoBuf;
 
 namespace OpenIdProvider
 {
@@ -50,6 +52,66 @@ namespace OpenIdProvider
                     _writeConnectionString = WebConfigurationManager.ConnectionStrings["WriteConnectionString"].ConnectionString;
 
                 return _writeConnectionString;
+            }
+        }
+
+        /// <summary>
+        /// DB to store into if we're using Redis as a caching layer.
+        /// </summary>
+        private static Lazy<int?> RedisDB = new Lazy<int?>(
+            delegate
+            {
+                var db = WebConfigurationManager.AppSettings["RedisDB"];
+
+                if (db == null) return null;
+
+                return Int32.Parse(db);
+            });
+
+        private static object _redisLock = new object();
+        private static RedisConnection _redisConnection;
+        /// <summary>
+        /// If we're setup to use Redis as a caching layer, return a connection to it.
+        /// 
+        /// Otherwise, returns null.
+        /// </summary>
+        private static RedisConnection Redis
+        {
+            get
+            {
+                if (_redisConnection != null) return _redisConnection;
+
+                lock (_redisLock)
+                {
+                    if (_redisConnection != null) return _redisConnection;
+
+                    var server = WebConfigurationManager.AppSettings["RedisServerAddress"];
+
+                    if (server == null) return null;
+
+                    int i = server.IndexOf(':');
+                    if (i == -1) throw new Exception("Misconfigured RedisServerAddress, expected [host]:[port]");
+
+                    var host = server.Substring(0, i);
+                    var port = Int32.Parse(server.Substring(i + 1));
+
+                    _redisConnection = new RedisConnection(host, port);
+                    _redisConnection.Open();
+                }
+
+                _redisConnection.Closed += delegate { _redisConnection = null; };
+                _redisConnection.Error +=
+                    delegate
+                    {
+                        try
+                        {
+                            // Suspect connection, bail and re-establish
+                            _redisConnection.Close(false);
+                        }
+                        catch { }
+                    };
+
+                return _redisConnection;
             }
         }
 
@@ -93,6 +155,9 @@ namespace OpenIdProvider
                 catch (Exception) { }
 
                 if (!path.EndsWith("\\")) path += "\\";
+
+                // Share path
+                if (path.StartsWith(@"\\")) return path;
 
                 return HttpContext.Current.Server.MapPath(path);
             }
@@ -564,6 +629,13 @@ namespace OpenIdProvider
                 if (retStr == null && user != null)
                     return GenerateXSRFToken();
 
+                // Things got a little wonky, need to clean up
+                if (retStr == null)
+                {
+                    KillCookie(AnonymousCookieName);
+                    throw new Exception("Bad cookie keyed XSRF token");
+                }
+                
                 return Guid.Parse(retStr);
             }
         }
@@ -711,8 +783,27 @@ namespace OpenIdProvider
         public static void AddToCache<T>(string name, T o, TimeSpan expiresIn) where T : class
         {
             // No point trying to cache null values
-            if(o != null)
-                HttpRuntime.Cache.Insert(name, o, null, Current.Now + expiresIn, Cache.NoSlidingExpiration);
+            if (o != null)
+            {
+                var redis = Redis;
+
+                if (redis == null)
+                {
+                    HttpRuntime.Cache.Insert(name, o, null, Current.Now + expiresIn, Cache.NoSlidingExpiration);
+                }
+                else
+                {
+                    byte[] bytes;
+                    using (var stream = new MemoryStream())
+                    {
+                        Serializer.Serialize<T>(stream, o);
+                        bytes = stream.ToArray();
+                    }
+
+                    redis.SetWithExpiry(RedisDB.Value.Value, "oid-" + name, (int)expiresIn.TotalSeconds, bytes, true);
+                }
+
+            }
         }
 
         /// <summary>
@@ -720,15 +811,47 @@ namespace OpenIdProvider
         /// </summary>
         public static T GetFromCache<T>(string name) where T : class
         {
-            return HttpRuntime.Cache[name] as T;
+            var redis = Redis;
+
+            if (redis == null)
+            {
+                return HttpRuntime.Cache[name] as T;
+            }
+            else
+            {
+                var reps = redis.Get(RedisDB.Value.Value, "oid-" + name, false);
+                var bytes = reps.Result;
+
+                if (bytes == null) return null;
+
+                using (var stream = new MemoryStream(bytes))
+                {
+                    return Serializer.Deserialize<T>(stream);
+                }
+            }
         }
 
         /// <summary>
-        /// Invalidate a key in teh (machine local) cache.
+        /// Invalidate a key in the cache.
+        /// 
+        /// Returns true if the key was present in the cache to be removed, and false otherwise.
         /// </summary>
-        public static void RemoveFromCache(string name)
+        public static bool RemoveFromCache(string name)
         {
-            HttpRuntime.Cache.Remove(name);
+            var redis = Redis;
+
+            if (redis == null)
+            {
+                var oldValue = HttpRuntime.Cache.Remove(name);
+
+                return oldValue != null;
+            }
+            else
+            {
+                var task = redis.Remove(RedisDB.Value.Value, "oid-" + name, true);
+
+                return task.Result;
+            }
         }
 
         /// <summary>

@@ -47,7 +47,32 @@ var common = function () {
 
 // Hold functions particular to the affiliate authentication/login process
 var affiliate = function () {
+    // Oh noes, some idiot browser is jacking with cookies
+    //   Try *really* hard to get them to accept a cookie.
+    //   If we fail, kick the user to the provider site.
+    //   Sure, the UX sucks, but at least it'll work.
+    var dynamicXSRF = function () {
+        $('#xsrf-recovery')[0].submit();
+    };
+
     return {
+        // Some browsers (read: Safari) do really dumb things with cookies in iframes
+        //    So we have to load the XSRF companion cookie dynamically like, technically making them less secure
+        //    but screw it.
+        checkXSRF: function () {
+            $(
+                function () {
+                    try {
+                        var canary = document.cookie.indexOf('canary'); // don't care about value, expiration, just existence
+
+                        if (canary == -1) {
+                            dynamicXSRF();
+                        }
+                    } catch (e) { }
+                }
+            );
+        },
+
         // Redirect the user using javascript so we can change top properly
         redirect: function (target) {
             top.location.replace(target);
@@ -308,7 +333,7 @@ var vanity = function () {
 
     var illegelChar = /[^\d\w\-\.]/i;
 
-    var error = $('<tr><td></td><td><div class="vanity-error"></div></td></tr>');
+    var error = $('<span class="vanity-error"></span>');
 
     var enforceRules = function () {
         error.detach();
@@ -318,14 +343,14 @@ var vanity = function () {
         if (text.length == 0) return;
 
         if (text.length > 40) {
-            error.find('.vanity-error').text('Cannot be more than 40 characters long.');
-            vanity.parents('tr').after(error);
+            error.text('Cannot be more than 40 characters long.');
+            vanity.after(error);
             return;
         }
 
         if (illegelChar.test(text)) {
-            error.find('.vanity-error').text('Only letters, numbers, periods, and dashes.');
-            vanity.parents('tr').after(error);
+            error.text('Only letters, numbers, periods, and dashes.');
+            vanity.after(error);
             return;
         }
     };

@@ -16,49 +16,35 @@
     <form method="post" action="/account/register/submit" autocomplete="off">
         <table class="position-table">
             <tr>
-                <td>
-                    <label for="email">Email</label>
-                </td>
                 <td class="input-td">
-                    <input type="text" name="email" id="email" value="@ViewData["email"]" />
+                    <input type="text" name="email" id="email" value="@ViewData["email"]" maxlength="100" />
                     <span class="form-help">@("name@example.com")</span>
                 </td>
             </tr>
             <tr>
-                <td>
-                    <label for="realname">Name</label>
-                </td>
                 <td class="input-td">
-                    <input type="text" name="realname" id="realname" value="@ViewData["realname"]" />
+                    <input type="text" name="realname" id="realname" value="@ViewData["realname"]" maxlength="100" />
                     <span class="form-help">John Smith (optional)</span>
                 </td>
             </tr>
             <tr>
-                <td>
-                    <label for="password">Password</label>
-                </td>
                 <td class="input-td">
-                    <input type="password" name="password" id="password" />
+                    <input type="password" name="password" id="password" value="@ViewData["password"]" />
                     <span class="form-help">Password</span>
                 </td>
             </tr>
             <tr>
-                <td>
-                    <label for="password2">Again</label>
-                </td>
                 <td class="input-td">
-                    <input type="password" name="password2" id="password2" />
+                    <input type="password" name="password2" id="password2" value="@ViewData["password2"]" />
                     <span class="form-help">Password</span>
                 </td>
             </tr>
             <tr>
-                <td></td>
                 <td class="input-td">
                     @{OpenIdProvider.Helpers.Captcha.Render(this.Output);}
                 </td>
             </tr>
             <tr>
-                <td></td>
                 <td class="input-td">
                     <input type="submit" class="orange" value="Send Confirmation Email" />
                 </td>

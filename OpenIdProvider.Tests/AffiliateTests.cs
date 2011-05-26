@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using OpenIdProvider.Models;
+using OpenIdProvider.Helpers;
 
 namespace OpenIdProvider.Tests
 {
@@ -13,6 +14,30 @@ namespace OpenIdProvider.Tests
     [TestFixture]
     public class AffiliateTests
     {
+        [Test]
+        public void ValidNonces()
+        {
+            string ignored;
+            for (int i = 0; i < 1000000; i++)
+            {
+                var nonce = Nonces.Create();
+                Assert.IsTrue(Nonces.IsValid(nonce, out ignored), "Failed on " + nonce);
+            }
+        }
+
+        [Test]
+        public void DoubleNonceUseFails()
+        {
+            string ignored;
+            for (int i = 0; i < 1000000; i++)
+            {
+                var nonce = Nonces.Create();
+                Assert.IsTrue(Nonces.IsValid(nonce, out ignored), "Failed on " + nonce);
+                Nonces.MarkUsed(nonce);
+                Assert.IsFalse(Nonces.IsValid(nonce, out ignored), "Accepted twice " + nonce);
+            }
+        }
+
         [Test]
         public void ValidFilters()
         {

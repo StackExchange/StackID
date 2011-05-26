@@ -15,7 +15,7 @@
         <table class="position-table">
             <tr>
                 <td class="input-td">
-                    <input class="framed-text-field" type="text" name="email" id="email" value="@ViewData["email"]" />
+                    <input class="framed-text-field" type="text" name="email" id="email" value="@ViewData["email"]" maxlength="100" />
                     <span class="form-help">@("name@example.com")</span>
                 </td>
                 <td class="input-td">
@@ -29,8 +29,12 @@
             </tr>
         </table>
 
-        <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="hidden" id="fkey" name="fkey" value="@Current.XSRFToken.Value" />
     </form>
+</div>
+
+<div style="visibility:hidden">
+    <form id="xsrf-recovery" method="post" action="@ViewData["RefreshUrl"]"></form>
 </div>
 
 @*
