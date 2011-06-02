@@ -16,7 +16,7 @@
     <title>@title</title>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
     <script type="text/javascript" src="@Html.CacheBreak("/Content/js/master.js")"></script>
-    <link rel="stylesheet" type="text/css" href="@Html.CacheBreak("/Content/all.css")" />
+    <link rel="stylesheet" type="text/css" href="@Html.CacheBreak("/Content/css/all.css")" />
     @if (Current.ShouldBustFrames)
     {
         <text>
@@ -45,8 +45,12 @@
                 }
             </style>
         }
-        
-        <script type="text/javascript">affiliate.checkXSRF();</script>
+
+        @* Don't do this check if we're coming back from a POST, since the recovery path will just fail again if we need it a second time *@
+        if (Request.HttpMethod != "POST")
+        {
+            <script type="text/javascript">affiliate.checkXSRF();</script>
+        }
     }
     </head>
 <body>

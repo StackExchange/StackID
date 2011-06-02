@@ -49,8 +49,6 @@ var common = function () {
 var affiliate = function () {
     // Oh noes, some idiot browser is jacking with cookies
     //   Try *really* hard to get them to accept a cookie.
-    //   If we fail, kick the user to the provider site.
-    //   Sure, the UX sucks, but at least it'll work.
     var dynamicXSRF = function () {
         $('#xsrf-recovery')[0].submit();
     };
@@ -84,16 +82,6 @@ var affiliate = function () {
 var help = function () {
     var findHelpOverlay = function (jText) {
         return $(jText).siblings('.form-help');
-    };
-
-    var bindHelpOverlayEvents = function (jText) {
-        jText
-            .bind("keydown contextmenu", function () { help.hideHelpOverlay($(this)); })
-
-            .focus(function () { showHideHelpOverlay($(this), /* focus = */true); })
-
-            .blur(function () { showHideHelpOverlay($(this)); })
-            .each(function () { showHideHelpOverlay($(this)); });
     };
 
     // Take this function with a pinch of salt -- it depends a lot on browser support.
@@ -142,7 +130,13 @@ var help = function () {
             // add a space so the cursor doesn't look weird clipping through the help text
             helpText = ' ' + helpText;
 
-            actualOverlay = jText.clone().attr("class", "actual-edit-overlay").removeAttr("name").removeAttr("id").attr("disabled", "disabled").val(helpText).css({
+            actualOverlay = $('<input type="text" />');
+            actualOverlay.attr("class", "actual-edit-overlay");
+            actualOverlay.removeAttr("name");
+            actualOverlay.removeAttr("id");
+            actualOverlay.attr("disabled", "disabled");
+            actualOverlay.val(helpText);
+            actualOverlay.css({
                 position: "absolute",
                 backgroundColor: "white", // disabled: disabled causes a different color in most browsers
                 color: "black",
@@ -150,7 +144,7 @@ var help = function () {
                 width: jText.width() + 2,
                 height: jText.height(),
                 fontSize: jText.css('font-size')
-            }).attr('type', 'text');
+            });
 
             copyCss(jText, actualOverlay, ["font-family", "font-size", "line-height", "text-align"]);
             jText.css({
@@ -168,6 +162,13 @@ var help = function () {
             }
         }
     }
+
+    var bindHelpOverlayEvents = function (jText) {
+        jText.bind("keydown contextmenu", function () { help.hideHelpOverlay($(this)); });
+        jText.focus(function () { showHideHelpOverlay($(this), /* focus = */true); });
+        jText.blur(function () { showHideHelpOverlay($(this)); });
+        jText.each(function () { showHideHelpOverlay($(this)); });
+    };
 
     return {
         hideHelpOverlay: function (jText) {

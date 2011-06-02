@@ -11,12 +11,14 @@
     <table class="position-table">
         <tr>
             <td>
+                <label for="realname" class="accessibility-hidden">Real Name</label>
                 <input type="text" name="realname" id="realname" value="@(ViewData["realname"] ?? Model.RealName)" maxlength="100" />
                 <span class="form-help">John Smith (optional)</span>
             </td>
         </tr>
         <tr>
             <td>
+                <label for="vanity" class="accessibility-hidden">Vanity OpenID Name</label>
                 <input name="vanity" id="vanity" type="text" value="@(ViewData["vanity"] ?? Model.VanityProviderId)" maxlength="40" />
                 <span class="form-help">john.smith (optional)</span>
             </td>

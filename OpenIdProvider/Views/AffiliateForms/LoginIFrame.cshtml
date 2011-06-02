@@ -11,14 +11,16 @@
 @ViewData.HandleErrorMessage()
 
 <div class="login-form">
-    <form method="post" action="/affiliate/form/login/submit?affId=@ViewData["affId"]" autocomplete="off">
+    <form method="post" action="/affiliate/form/login/submit" autocomplete="off">
         <table class="position-table">
             <tr>
                 <td class="input-td">
+                    <label for="email" class="accessibility-hidden">Email</label>
                     <input class="framed-text-field" type="text" name="email" id="email" value="@ViewData["email"]" maxlength="100" />
                     <span class="form-help">@("name@example.com")</span>
                 </td>
                 <td class="input-td">
+                    <label for="password" class="accessibility-hidden">Password</label>
                     <input class="framed-text-field" type="password" name="password" id="password" />
                     <span class="form-help">Password</span>
                 </td>
@@ -29,6 +31,7 @@
             </tr>
         </table>
 
+        <input type="hidden" name="affId" value="@ViewData["affId"]" />
         <input type="hidden" id="fkey" name="fkey" value="@Current.XSRFToken.Value" />
     </form>
 </div>

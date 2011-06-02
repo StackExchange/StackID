@@ -16,7 +16,7 @@ namespace OpenIdProvider.Helpers
         /// <summary>
         /// Extracts the encoded creation date, and validates the form.
         /// </summary>
-        internal static bool Parse(string nonce, out DateTime created)
+        public static bool Parse(string nonce, out DateTime created)
         {
             created = DateTime.MinValue;
 
@@ -46,10 +46,12 @@ namespace OpenIdProvider.Helpers
         ///   - aren't storing and checking against a value
         ///   - need expiration semantics
         /// </summary>
-        public static string Create()
+        public static string Create(DateTime? createFor = null)
         {
+            var from = createFor ?? Current.Now;
+
             var ret = new List<byte>();
-            ret.AddRange(BitConverter.GetBytes((long)(Current.Now - UnixEpoch).TotalSeconds));
+            ret.AddRange(BitConverter.GetBytes((long)(from - UnixEpoch).TotalSeconds));
             ret.AddRange(Current.Random(8));
 
             return Convert.ToBase64String(ret.ToArray());
@@ -58,7 +60,7 @@ namespace OpenIdProvider.Helpers
         /// <summary>
         /// Returns true if this nonce is valid (ie. parsable, and has not been used yet).
         /// </summary>
-        public static bool IsValid(string nonce, out string failureReason)
+        public static bool IsValid(string nonce, string remoteIp, out string failureReason, DateTime? now = null)
         {
             DateTime created;
             if (!Parse(nonce, out created))
@@ -67,7 +69,9 @@ namespace OpenIdProvider.Helpers
                 return false;
             }
 
-            var dif = (Current.Now - created).TotalMinutes;
+            var acceptWinCenter = now ?? Current.Now;
+
+            var dif = (acceptWinCenter - created).TotalMinutes;
 
             // 10 minute total drift permissable
             if (Math.Abs(dif) >= 5)
@@ -76,10 +80,14 @@ namespace OpenIdProvider.Helpers
                 return false;
             }
 
-            // Cannot have already used this nonce
-            if (Current.GetFromCache<string>("nonce-" + nonce) != null)
+            // Cannot have already used this nonce from a different IP
+            //   Ideally, the nonce wouldn't be re-used by anyone ever... but in practice
+            //   proxies and bogus caches in browsers cause a lot of nonce re-use from the same
+            //   IP.  Sucks, and less secure, but that's the reality.
+            var seenBeforeFrom = Current.GetFromCache<string>("nonce-" + nonce);
+            if (seenBeforeFrom != null && seenBeforeFrom != remoteIp)
             {
-                failureReason = "Re-used nonce (" + nonce + ")";
+                failureReason = "Re-used nonce (" + nonce + " from " + seenBeforeFrom + ")";
                 return false;
             }
 
@@ -90,13 +98,13 @@ namespace OpenIdProvider.Helpers
         /// <summary>
         /// Marks the given nonce as unusable.
         /// </summary>
-        public static void MarkUsed(string nonce)
+        public static void MarkUsed(string nonce, string byIP)
         {
             DateTime created;
 
             if (!Parse(nonce, out created)) throw new InvalidOperationException("Invalid nonce passed [" + nonce + "]");
 
-            Current.AddToCache("nonce-" + nonce, "", TimeSpan.FromMinutes(10));
+            Current.AddToCache("nonce-" + nonce, byIP, TimeSpan.FromMinutes(10));
         }
     }
 }

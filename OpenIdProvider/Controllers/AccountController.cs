@@ -42,9 +42,14 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Login page for existing users.
         /// </summary>
-        [Route("account/login", AuthorizedUser.Anonymous)]
+        [Route("account/login", AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)]
         public ActionResult Login(string session)
         {
+            if (Current.LoggedInUser != null)
+            {
+                return SafeRedirect((Func<ActionResult>)(new UserController()).ViewUser);
+            }
+
             Current.GenerateAnonymousXSRFCookie();
 
             ViewData["session"] = session;

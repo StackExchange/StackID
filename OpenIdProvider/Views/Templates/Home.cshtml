@@ -11,5 +11,5 @@
 </p>
 
 <p>
-    To log into any website supporting OpenID, you can simply type <code>@(Current.AppRootUri.Host)</code> into their login form.<br />
+    To log into any website supporting OpenID, you can simply type <code>@(Current.AppRootUri.Scheme + "://" + Current.AppRootUri.Host)</code> into their login form.<br />
 </p>

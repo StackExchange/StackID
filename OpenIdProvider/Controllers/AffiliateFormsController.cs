@@ -41,14 +41,24 @@ namespace OpenIdProvider.Controllers
         /// </summary>
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            var @params = filterContext.HttpContext.Request.QueryString;
+            var @params = new Dictionary<string, string>();
+
+            foreach (var x in filterContext.HttpContext.Request.QueryString.AllKeys)
+            {
+                @params[x] = filterContext.HttpContext.Request.QueryString[x];
+            }
+
+            if (!@params.ContainsKey("affId") && Request.Form.AllKeys.Contains("affId"))
+            {
+                @params["affId"] = Request.Form["affId"];
+            }
 
             var method = filterContext.HttpContext.Request.HttpMethod;
 
             string failureReason = null;
 
             var failure = false;
-            if (!@params.AllKeys.Contains("affId"))
+            if (!@params.ContainsKey("affId"))
             {
                 failureReason = "No affId";
                 failure = true;
@@ -85,12 +95,12 @@ namespace OpenIdProvider.Controllers
                     else
                     {
                         // For all other routes, confirm that they came from a registered affiliate
-                        if (!@params.AllKeys.Contains("nonce"))
+                        if (!@params.ContainsKey("nonce"))
                         {
                             failureReason = "No Nonce";
                             failure = true;
                         }
-                        if (!@params.AllKeys.Contains("authCode"))
+                        if (!@params.ContainsKey("authCode"))
                         {
                             failureReason = "No Nonce";
                             failure = true;
@@ -145,7 +155,7 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Returns true if the parameters contain a valid signature for a request.
         /// </summary>
-        private static bool VerifySignature(NameValueCollection @params, out Affiliate validFor, out string failureReason)
+        private static bool VerifySignature(Dictionary<string, string> @params, out Affiliate validFor, out string failureReason)
         {
             validFor = null;
 
@@ -161,7 +171,7 @@ namespace OpenIdProvider.Controllers
             var nonce = @params["nonce"].ToString();
 
             string nonceMsg;
-            if (!Nonces.IsValid(nonce, out nonceMsg))
+            if (!Nonces.IsValid(nonce, Current.RemoteIP, out nonceMsg))
             {
                 failureReason = "Invalid Nonce [" + nonceMsg + "]";
                 return false;
@@ -176,7 +186,7 @@ namespace OpenIdProvider.Controllers
             }
 
             var copy = new Dictionary<string, string>();
-            foreach (var item in @params.AllKeys.Where(k => k != "authCode"))
+            foreach (var item in @params.Keys.Where(k => k != "authCode"))
             {
                 copy[item] = @params[item];
             }
@@ -189,7 +199,7 @@ namespace OpenIdProvider.Controllers
 
             validFor = affiliate;
 
-            Nonces.MarkUsed(nonce);
+            Nonces.MarkUsed(nonce, Current.RemoteIP);
 
             failureReason = null;
             return true;
@@ -208,7 +218,7 @@ namespace OpenIdProvider.Controllers
 
             if (shouldMatch != authCode) return GenericSecurityError();
 
-            Nonces.MarkUsed(nonce);
+            Nonces.MarkUsed(nonce, Current.RemoteIP);
 
             bool addCookie;
             if (bool.TryParse(newCookie, out addCookie) && addCookie)
@@ -399,12 +409,19 @@ namespace OpenIdProvider.Controllers
 
             var completeLink = Current.Url(complete.Url);
 
+            string affName = CurrentAffiliate.HostFilter;
+            Uri callbackUri;
+            if (Uri.TryCreate(callback, UriKind.Absolute, out callbackUri))
+            {
+                affName = callbackUri.Host;
+            }
+
             var success = 
                 Current.Email.SendEmail(
                     email,
                     Email.Template.CompleteRegistrationViaAffiliate,
                     new {
-                        AffiliateName = CurrentAffiliate.HostFilter,
+                        AffiliateName = affName,
                         RegistrationLink = completeLink
                     });
 
@@ -679,7 +696,7 @@ namespace OpenIdProvider.Controllers
             if (!Current.LoggedInUser.HasGrantedAuthorization(uri.Host)) return GenericSecurityError();
 
             var writeUser = Current.WriteDB.Users.Single(u => u.Id == Current.LoggedInUser.Id);
-            writeUser.Logout(Current.Now);
+            writeUser.Logout(Current.Now, uri.Host);
 
             // Need that redirect bounce page so you can
             return View("Redirect", (object)callback);

@@ -951,7 +951,11 @@ namespace OpenIdProvider
                 signString = prop.Key + "=" + prop.Value + "&";
             }
 
-            signString = signString.Substring(0, signString.Length - 1);
+            // trim off trailing '&'
+            if (signString.Length > 0)
+            {
+                signString = signString.Substring(0, signString.Length - 1);
+            }
 
             return MakeAuthCode(Encoding.UTF8.GetBytes(signString), hmac);
         }

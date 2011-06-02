@@ -185,6 +185,8 @@ namespace OpenIdProvider.Models
             var at = email.IndexOf('@');
             if (at == -1) return false;
 
+            if (email.Length < at + 2) return false;
+
             var dot = email.IndexOf('.', at + 2);
 
             if (dot == -1) return false;
@@ -518,14 +520,26 @@ namespace OpenIdProvider.Models
         /// <summary>
         /// Record a logout event for the user, destoy their cookie, and invalidate their session.
         /// </summary>
-        public void Logout(DateTime now)
+        public void Logout(DateTime now, string careOfHost = null)
         {
             // Delete this users session cookie
             Current.KillCookie(Current.UserCookieName);
 
+            var comment = "Logged Out";
+            if (careOfHost.HasValue())
+            {
+                var cleanHost = careOfHost.ToLowerInvariant();
+                if (cleanHost.Length + 3 + comment.Length > 400)
+                {
+                    cleanHost = cleanHost.Substring(0, 400 - 3 - comment.Length);
+                }
+
+                comment += " (" + cleanHost + ")";
+            }
+
             var logoutEvent = new UserHistory
             {
-                Comment = "Logged Out",
+                Comment = comment,
                 CreationDate = now,
                 UserHistoryTypeId = UserHistoryTypeId.Logout,
                 UserId = Id,

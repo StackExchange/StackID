@@ -164,9 +164,10 @@ namespace OpenIdProvider.Helpers
         /// <summary>
         /// Loads the first topN errors (by creation date) starting with the (0-based index) one at startingAt.
         /// </summary>
-        public static IEnumerable<Error> LoadErrors(string path, int topN, int startingAt)
+        public static IEnumerable<Error> LoadErrors(string path, int topN, int startingAt, out int totalErrors)
         {
             var allFiles = Directory.EnumerateFiles(path, "*.log");
+            totalErrors = allFiles.Count();
 
             var toLoad = allFiles.OrderByDescending(f => File.GetLastWriteTimeUtc(f)).Skip(startingAt).Take(topN);
 

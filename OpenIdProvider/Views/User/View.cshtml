@@ -11,36 +11,46 @@
 }
 
 <div class="user-info">
-    @if (realName != null)
-    {
-        <text>
-            <div class="user-attribute">Real Name</div>
-            <div class="user-attribute-value real-name">@realName</div>
-        </text>
-    }
+    <table width="100%">
+        <tr>
+            <td>
+                <div>
+                    @if (realName != null)
+                    {
+                        <text>
+                            <div class="user-attribute">Real Name</div>
+                            <div class="user-attribute-value real-name">@realName</div>
+                        </text>
+                    }
 
-    <div class="user-attribute">Last Seen</div>
-    <div class="user-attribute-value">@lastActivity.ToRelativeTimeSpan()</div>
+                    <div class="user-attribute">Last Seen</div>
+                    <div class="user-attribute-value">@lastActivity.ToRelativeTimeSpan()</div>
 
-    @if (Model.VanityProviderId.HasValue())
-    {
-        var vanityUrl = Model.GetVanityClaimedIdentifier().AbsoluteUri;
-        <text>
-        <div class="user-attribute">Vanity Id</div>
-        <div class="user-attribute-value"><a href="@vanityUrl">@vanityUrl</a></div>
-        </text>
-    }
+                    @if (Model.VanityProviderId.HasValue())
+                    {
+                        var vanityUrl = Model.GetVanityClaimedIdentifier().AbsoluteUri;
+                        <text>
+                        <div class="user-attribute">Vanity Id</div>
+                        <div class="user-attribute-value"><a href="@vanityUrl">@vanityUrl</a></div>
+                        </text>
+                    }
 
-    <div class="edit-profile">
-    @if (Current.LoggedInUser.IsAdministrator)
-    {
-        <a href="/user/@(Model.ProviderId)/edit">Edit Profile</a>
-    }
-    else
-    {
-        <a href="/user/edit">Edit Profile</a>
-    }
-    </div>
+                    <div class="edit-profile">
+                    @if (Current.LoggedInUser.IsAdministrator)
+                    {
+                        <a href="/user/@(Model.ProviderId)/edit">Edit Profile</a>
+                    }
+                    else
+                    {
+                        <a href="/user/edit">Edit Profile</a>
+                    }
+                </div>
+            </td>
+            <td>
+                <div class="id-card" style="float:right"></div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <div class="user-history">

@@ -31,10 +31,10 @@ namespace OpenIdProvider.Controllers
         [Route("admin/errors", AuthorizedUser.Administrator)]
         public ActionResult ListErrors(int? pagesize, int? page)
         {
-            //if (!Current.IsInternalRequest) return IrrecoverableError("Error Log Not Accessible from this IP", "For security reasons, you must be on an internal IP (VPN or otherwise) to view the error log.");
+            int total;
+            var errors = Error.LoadErrors(Current.ErrorLogPath, pagesize.GetValueOrDefault(30), page.GetValueOrDefault(1) - 1, out total);
 
-            var errors = Error.LoadErrors(Current.ErrorLogPath, pagesize.GetValueOrDefault(30), page.GetValueOrDefault(1) - 1);
-
+            ViewData["total"] = total;
             ViewData["pagesize"] = pagesize.GetValueOrDefault(30);
             ViewData["page"] = page.GetValueOrDefault(1);
 
@@ -47,8 +47,6 @@ namespace OpenIdProvider.Controllers
         [Route("admin/error/{id}", RoutePriority.Low, AuthorizedUser.Administrator)]
         public ActionResult ViewError(string id)
         {
-            //if (!Current.IsInternalRequest) return IrrecoverableError("Error Log Not Accessible from this IP", "For security reasons, you must be on an internal IP (VPN or otherwise) to view the error log.");
-
             Guid errorId;
             if (id.IsNullOrEmpty() || !Guid.TryParse(id, out errorId)) return NotFound();
 

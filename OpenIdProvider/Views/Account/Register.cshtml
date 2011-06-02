@@ -17,24 +17,28 @@
         <table class="position-table">
             <tr>
                 <td class="input-td">
+                    <label for="email" class="accessibility-hidden">Email</label>
                     <input type="text" name="email" id="email" value="@ViewData["email"]" maxlength="100" />
                     <span class="form-help">@("name@example.com")</span>
                 </td>
             </tr>
             <tr>
                 <td class="input-td">
+                    <label for="realname" class="accessibility-hidden">Real Name</label>
                     <input type="text" name="realname" id="realname" value="@ViewData["realname"]" maxlength="100" />
                     <span class="form-help">John Smith (optional)</span>
                 </td>
             </tr>
             <tr>
                 <td class="input-td">
+                    <label for="password" class="accessibility-hidden">Password</label>
                     <input type="password" name="password" id="password" value="@ViewData["password"]" />
                     <span class="form-help">Password</span>
                 </td>
             </tr>
             <tr>
                 <td class="input-td">
+                    <label for="password2" class="accessibility-hidden">Re-enter Password</label>
                     <input type="password" name="password2" id="password2" value="@ViewData["password2"]" />
                     <span class="form-help">Password</span>
                 </td>

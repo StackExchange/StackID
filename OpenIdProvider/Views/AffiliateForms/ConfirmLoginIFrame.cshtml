@@ -13,8 +13,9 @@
 </div>
 
 <div class="login-form">
-    <form method="post" action="/affiliate/form/confirm/submit?affId=@ViewData["affId"]">
+    <form method="post" action="/affiliate/form/confirm/submit">
         <input type="hidden" id="fkey" name="fkey" value="@Current.XSRFToken.Value" />
+        <input type="hidden" name="affId" value="@ViewData["affId"]" />
         <input type="submit" class="affiliate-button" name="accept" value="Login" />
     </form>
 </div>

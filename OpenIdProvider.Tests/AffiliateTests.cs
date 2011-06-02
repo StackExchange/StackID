@@ -15,13 +15,40 @@ namespace OpenIdProvider.Tests
     public class AffiliateTests
     {
         [Test]
+        public void AcceptableNonceDrift()
+        {
+            var offsetFromNow = TimeSpan.FromSeconds(-60 * 5).Add(TimeSpan.FromSeconds(1));
+            var max = TimeSpan.FromMinutes(5);
+
+            while (offsetFromNow < max)
+            {
+                string ignored;
+                for (int i = 0; i < 1000; i++)
+                {
+                    var now = DateTime.UtcNow;
+
+                    var nonce = Nonces.Create(now + offsetFromNow);
+
+                    if (!Nonces.IsValid(nonce, "127.0.0.1", out ignored, now))
+                    {
+                        DateTime created;
+                        Nonces.Parse(nonce, out created);
+                        Assert.Fail("Failed on [" + nonce + "] on [" + created + "] diff of [" + (created - now) + "]");
+                    }
+                }
+
+                offsetFromNow = offsetFromNow.Add(TimeSpan.FromSeconds(1));
+            }
+        }
+
+        [Test]
         public void ValidNonces()
         {
             string ignored;
             for (int i = 0; i < 1000000; i++)
             {
                 var nonce = Nonces.Create();
-                Assert.IsTrue(Nonces.IsValid(nonce, out ignored), "Failed on " + nonce);
+                Assert.IsTrue(Nonces.IsValid(nonce, "127.0.0.1", out ignored), "Failed on " + nonce);
             }
         }
 
@@ -32,9 +59,9 @@ namespace OpenIdProvider.Tests
             for (int i = 0; i < 1000000; i++)
             {
                 var nonce = Nonces.Create();
-                Assert.IsTrue(Nonces.IsValid(nonce, out ignored), "Failed on " + nonce);
-                Nonces.MarkUsed(nonce);
-                Assert.IsFalse(Nonces.IsValid(nonce, out ignored), "Accepted twice " + nonce);
+                Assert.IsTrue(Nonces.IsValid(nonce, "127.0.0.1", out ignored), "Failed on " + nonce);
+                Nonces.MarkUsed(nonce, "127.0.0.1");
+                Assert.IsFalse(Nonces.IsValid(nonce, "127.0.0.2", out ignored), "Accepted twice " + nonce);
             }
         }
 

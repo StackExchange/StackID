@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <MSBuildExtensionsPath32>$(MSBuildProjectDirectory)\..\Build\targets</MSBuildExtensionsPath32>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>
@@ -227,7 +226,7 @@
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Content\all.css" />
+    <Content Include="Content\css\all.css" />
     <Content Include="Views\Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Master.cshtml" />
@@ -251,6 +250,7 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\Web.config" />
     <None Include="Migrations\make-db-build-script.bat" />
     <None Include="Models\DataClasses.dbml">
       <Generator>MSLinqToSQLGenerator</Generator>
@@ -273,10 +273,10 @@
     <Content Include="Views\Templates\ResetPassword.cshtml" />
     <Content Include="Views\Account\AffiliateRegistrationRedirect.cshtml" />
     <Content Include="Views\Account\PromptForAuthorization.cshtml" />
-    <Content Include="Views\Templates\Home.cshtml" />
     <Content Include="packages.config" />
     <Content Include="Views\Templates\ResetPasswordAffiliate.cshtml" />
     <Content Include="Views\Account\DeAuthAffiliate.cshtml" />
+    <Content Include="Views\Templates\Home.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
