@@ -41,6 +41,15 @@ namespace OpenIdProvider.Controllers
         /// </summary>
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
+            Current.NoCache = true;
+
+            if (Current.PostExpectedAndNotReceived)
+            {
+                Current.ShouldBustFrames = false;
+                filterContext.Result = PostExpectedAndNotReceived();
+                return;
+            }
+
             var @params = new Dictionary<string, string>();
 
             foreach (var x in filterContext.HttpContext.Request.QueryString.AllKeys)
@@ -145,7 +154,7 @@ namespace OpenIdProvider.Controllers
 
             var formCanaryCookie = new HttpCookie("canary", "1");
             formCanaryCookie.HttpOnly = false; // the whole point is to check for this via javascript
-            formCanaryCookie.Expires = Current.Now + TimeSpan.FromMinutes(1);
+            formCanaryCookie.Expires = Current.Now + TimeSpan.FromMinutes(5);
 
             filterContext.HttpContext.Response.Cookies.Add(formCanaryCookie);
 
@@ -157,6 +166,13 @@ namespace OpenIdProvider.Controllers
         /// </summary>
         private static bool VerifySignature(Dictionary<string, string> @params, out Affiliate validFor, out string failureReason)
         {
+            if (!@params.ContainsKey("authCode") || !@params.ContainsKey("affId") || !@params.ContainsKey("nonce"))
+            {
+                validFor = null;
+                failureReason = "Missing parameter";
+                return false;
+            }
+
             validFor = null;
 
             var authCode = @params["authCode"].ToString();
@@ -422,7 +438,7 @@ namespace OpenIdProvider.Controllers
                     Email.Template.CompleteRegistrationViaAffiliate,
                     new {
                         AffiliateName = affName,
-                        RegistrationLink = completeLink
+                        RegistrationLink = completeLink.AsLink()
                     });
 
             if (!success)
@@ -668,7 +684,7 @@ namespace OpenIdProvider.Controllers
 
             var deAuthLink = Current.Url(toDeAuth.Url);
 
-            if (!Current.Email.SendEmail(email, Email.Template.ResetPasswordAffiliate, new { RecoveryLink = resetLink, AffiliateLink = affiliateLink, AffiliateName = affiliateName, DeAuthLink = deAuthLink }))
+            if (!Current.Email.SendEmail(email, Email.Template.ResetPasswordAffiliate, new { RecoveryLink = resetLink.AsLink(), AffiliateLink = affiliateLink.AsLink(), AffiliateName = affiliateName, DeAuthLink = deAuthLink.AsLink() }))
             {
                 return IrrecoverableError("Could not send email", "This error has been logged");
             }
@@ -683,18 +699,12 @@ namespace OpenIdProvider.Controllers
         [Route("affiliate/form/logout")]
         public ActionResult TriggerLogout(string callback)
         {
-            // Only available to affiliates, so they better not be redirecting you somewhere weird
-            if (!CurrentAffiliate.IsValidCallback(callback)) return GenericSecurityError();
-
             Uri uri;
             if (!Uri.TryCreate(callback, UriKind.Absolute, out uri)) return GenericSecurityError();
 
             // Not logged in, just hop where-ever
             if (Current.LoggedInUser == null) return Redirect(callback);
-
-            // If you *are* logged in, only affiliates who you've granted creds to need to be able to log you off
-            if (!Current.LoggedInUser.HasGrantedAuthorization(uri.Host)) return GenericSecurityError();
-
+            
             var writeUser = Current.WriteDB.Users.Single(u => u.Id == Current.LoggedInUser.Id);
             writeUser.Logout(Current.Now, uri.Host);
 

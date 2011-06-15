@@ -74,6 +74,21 @@ var affiliate = function () {
         // Redirect the user using javascript so we can change top properly
         redirect: function (target) {
             top.location.replace(target);
+        },
+
+        // Replace the entire page with a warning about third-party cookies
+        //   if the canary cookie isn't present.
+        failNoCanary: function (siteUrl) {
+            $(
+                function () {
+                    var canary = document.cookie.indexOf('canary');  // testing that cookies are working
+
+                    if (canary == -1) {
+                        var x = $('body').empty().append('<h1 class="error">Third Party Cookie Appear To Be Disabled</h1>');
+                        x.append('<p>This site depends on third-party cookies, please add an exception for <b>' + siteUrl + '</b>.</p>');
+                    }
+                }
+            );
         }
     };
 } ();

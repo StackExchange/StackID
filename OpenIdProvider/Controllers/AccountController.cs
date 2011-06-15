@@ -155,7 +155,7 @@ namespace OpenIdProvider.Controllers
 
             var completeLink = Current.Url(toComplete.Url);
 
-            if (!Current.Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink }))
+            if (!Current.Email.SendEmail(email, Email.Template.CompleteRegistration, new { RegistrationLink = completeLink.AsLink() }))
             {
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }
@@ -255,7 +255,7 @@ namespace OpenIdProvider.Controllers
 
             var resetLink = Current.Url(toReset.Url);
 
-            if (!Current.Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink }))
+            if (!Current.Email.SendEmail(email, Email.Template.ResetPassword, new { RecoveryLink = resetLink.AsLink() }))
             {
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }
@@ -331,7 +331,7 @@ namespace OpenIdProvider.Controllers
 
             var account = SafeRedirect((Func<ActionResult>)(new UserController()).ViewUser);
 
-            if (!Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged, new { AccountLink = Current.Url(account.Url) }))
+            if (!Current.Email.SendEmail(user.Email, Email.Template.PasswordChanged, new { AccountLink = Current.Url(account.Url).AsLink() }))
             {
                 return IrrecoverableError("An error occurred sending the email", "This has been recorded, and will be looked into shortly");
             }

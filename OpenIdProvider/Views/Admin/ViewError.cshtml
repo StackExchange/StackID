@@ -44,10 +44,10 @@
             </thead>
 
         @{
-            var even = true;
-            foreach (var p in Model.Parameters)
-            {
-                if (p.Value.IsNullOrEmpty()) { continue; }
+        var even = true;
+        foreach (var p in Model.Parameters)
+        {
+            if (p.Value.IsNullOrEmpty()) { continue; }
                 <text>
                     <tr class="@(even ? "even" : "odd")">
                         <td>
@@ -58,8 +58,8 @@
                         </td>
                     </tr>
                 </text>
-                even = !even;
-            }
+                       even = !even;
+        }
         }
         </table>
     }
@@ -79,9 +79,9 @@
                 </tr>
             </thead>
         @{
-            var even = true;
-            foreach (var p in Model.ReceivedCookies)
-            {
+        var even = true;
+        foreach (var p in Model.ReceivedCookies)
+        {
                 <text>
                 <tr class="@(even ? "even" : "odd")">
                     <td>
@@ -92,8 +92,8 @@
                     </td>
                 </tr>
                 </text>
-                even = !even;
-            }
+                   even = !even;
+        }
         }
         </table>
     }
@@ -113,9 +113,9 @@
                 </tr>
             </thead>
         @{
-            var even = true;
-            foreach (var p in Model.SendingCookies)
-            {
+        var even = true;
+        foreach (var p in Model.SendingCookies)
+        {
                 <text>
                 <tr class="@(even ? "even" : "odd")">
                     <td>
@@ -126,8 +126,8 @@
                     </td>
                 </tr>
                 </text>
-                even = !even;
-            }
+                   even = !even;
+        }
         }
         </table>
     }
@@ -147,10 +147,10 @@
                 </tr>
             </thead>
         @{
-            var even = true;
-            foreach (var p in Model.ReceivedHeaders)
-            {
-                if (p.Value.IsNullOrEmpty()) { continue; }
+        var even = true;
+        foreach (var p in Model.ReceivedHeaders)
+        {
+            if (p.Value.IsNullOrEmpty()) { continue; }
                 
                 <text>
                 <tr class="@(even ? "even" : "odd")">
@@ -162,8 +162,8 @@
                     </td>
                 </tr>
                 </text>
-                even = !even;
-            }
+                   even = !even;
+        }
         }
         </table>
     }
@@ -183,10 +183,10 @@
                 </tr>
             </thead>
         @{
-            var even = true;
-            foreach (var p in Model.SendingHeaders)
-            {
-                if (p.Value.IsNullOrEmpty()) { continue; }
+        var even = true;
+        foreach (var p in Model.SendingHeaders)
+        {
+            if (p.Value.IsNullOrEmpty()) { continue; }
                 <text>
                 <tr class="@(even ? "even" : "odd")">
                     <td>
@@ -197,9 +197,44 @@
                     </td>
                 </tr>
                 </text>
-                even = !even;
-            }
+                   even = !even;
         }
+        }
+        </table>
+    }
+    
+    @if (Model.Form != null && Model.Form.Count > 0)
+    {
+        <h3>Form</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>
+                        Name
+                    </td>
+                    <td>
+                        Value
+                    </td>
+                </tr>
+            </thead>
+            @{
+                var even = true;
+                foreach (var p in Model.Form)
+                {
+                    if (p.Value.IsNullOrEmpty()) { continue; }
+                        <text>
+                        <tr class="@(even ? "even" : "odd")">
+                            <td>
+                                @p.Key
+                            </td>
+                            <td>
+                                @p.Value
+                            </td>
+                        </tr>
+                        </text>
+                           even = !even;
+                }
+            }
         </table>
     }
 </div>

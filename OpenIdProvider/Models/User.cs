@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using OpenIdProvider.Helpers;
 using System.Text.RegularExpressions;
+using MvcMiniProfiler;
 
 namespace OpenIdProvider.Models
 {
@@ -18,20 +19,23 @@ namespace OpenIdProvider.Models
         {
             get
             {
-                var encryptedEmail = Current.ReadDB.UserAttributes.Single(a => a.UserId == this.Id && a.UserAttributeTypeId == UserAttributeTypeId.Email);
-
-                bool outOfDate;
-                var email = Current.Decrypt(encryptedEmail.Encrypted, encryptedEmail.IV, encryptedEmail.KeyVersion, encryptedEmail.HMAC, out outOfDate);
-
-                // The key has changed since we looked at this record, go ahead and do a spot update
-                if (outOfDate)
+                using (MiniProfiler.Current.Step("User.Email"))
                 {
-                    string ignored;
-                    UpdateAttribute(email, UserAttributeTypeId.Email, out ignored);
-                    Current.WriteDB.SubmitChanges();
-                }
+                    var encryptedEmail = Current.ReadDB.UserAttributes.Single(a => a.UserId == this.Id && a.UserAttributeTypeId == UserAttributeTypeId.Email);
 
-                return email;
+                    bool outOfDate;
+                    var email = Current.Decrypt(encryptedEmail.Encrypted, encryptedEmail.IV, encryptedEmail.KeyVersion, encryptedEmail.HMAC, out outOfDate);
+
+                    // The key has changed since we looked at this record, go ahead and do a spot update
+                    if (outOfDate)
+                    {
+                        string ignored;
+                        UpdateAttribute(email, UserAttributeTypeId.Email, out ignored);
+                        Current.WriteDB.SubmitChanges();
+                    }
+
+                    return email;
+                }
             }
         }
 
@@ -44,22 +48,25 @@ namespace OpenIdProvider.Models
         {
             get
             {
-                var encryptedRealName = Current.ReadDB.UserAttributes.SingleOrDefault(a => a.UserId == this.Id && a.UserAttributeTypeId == UserAttributeTypeId.RealName);
-
-                if (encryptedRealName == null) return null;
-
-                bool outOfDate;
-                var realName = Current.Decrypt(encryptedRealName.Encrypted, encryptedRealName.IV, encryptedRealName.KeyVersion, encryptedRealName.HMAC, out outOfDate);
-                
-                // The key has changed since we looked at this record, go ahead and do a spot update
-                if (outOfDate)
+                using (MiniProfiler.Current.Step("User.RealName"))
                 {
-                    string ignored;
-                    UpdateAttribute(realName, UserAttributeTypeId.RealName, out ignored);
-                    Current.WriteDB.SubmitChanges();
-                }
+                    var encryptedRealName = Current.ReadDB.UserAttributes.SingleOrDefault(a => a.UserId == this.Id && a.UserAttributeTypeId == UserAttributeTypeId.RealName);
 
-                return realName;
+                    if (encryptedRealName == null) return null;
+
+                    bool outOfDate;
+                    var realName = Current.Decrypt(encryptedRealName.Encrypted, encryptedRealName.IV, encryptedRealName.KeyVersion, encryptedRealName.HMAC, out outOfDate);
+
+                    // The key has changed since we looked at this record, go ahead and do a spot update
+                    if (outOfDate)
+                    {
+                        string ignored;
+                        UpdateAttribute(realName, UserAttributeTypeId.RealName, out ignored);
+                        Current.WriteDB.SubmitChanges();
+                    }
+
+                    return realName;
+                }
             }
         }
 
@@ -81,52 +88,55 @@ namespace OpenIdProvider.Models
         /// </summary>
         public bool UpdateAttribute(string value, byte attribute, out string message)
         {
-            var db = Current.WriteDB;
-
-            var toUpdate =
-                (from user in db.Users
-                 join attr in db.UserAttributes on user.Id equals attr.UserId
-                 where attr.UserAttributeTypeId == attribute && user.Id == this.Id
-                 select attr).SingleOrDefault();
-
-            if (value.IsNullOrEmpty())
+            using (MiniProfiler.Current.Step("UpdateAttribute"))
             {
-                if (toUpdate != null)
+                var db = Current.WriteDB;
+
+                var toUpdate =
+                    (from user in db.Users
+                     join attr in db.UserAttributes on user.Id equals attr.UserId
+                     where attr.UserAttributeTypeId == attribute && user.Id == this.Id
+                     select attr).SingleOrDefault();
+
+                if (value.IsNullOrEmpty())
                 {
-                    db.UserAttributes.DeleteOnSubmit(toUpdate);
+                    if (toUpdate != null)
+                    {
+                        db.UserAttributes.DeleteOnSubmit(toUpdate);
+                    }
+
+                    message = null;
+                    return true;
                 }
+
+                if (toUpdate == null)
+                {
+                    toUpdate = new UserAttribute();
+                    toUpdate.CreationDate = Current.Now;
+                    toUpdate.UserId = this.Id;
+                    toUpdate.UserAttributeTypeId = attribute;
+
+                    db.UserAttributes.InsertOnSubmit(toUpdate);
+                }
+
+                string iv, hmac;
+                byte version;
+                var updated = Current.Encrypt(value, out iv, out version, out hmac);
+
+                if (updated.Length > 267)
+                {
+                    message = UserAttributeTypeId.GetDisplayName(attribute) + " is too long.";
+                    return false;
+                }
+
+                toUpdate.Encrypted = updated;
+                toUpdate.IV = iv;
+                toUpdate.KeyVersion = version;
+                toUpdate.HMAC = hmac;
 
                 message = null;
                 return true;
             }
-
-            if (toUpdate == null)
-            {
-                toUpdate = new UserAttribute();
-                toUpdate.CreationDate = Current.Now;
-                toUpdate.UserId = this.Id;
-                toUpdate.UserAttributeTypeId = attribute;
-
-                db.UserAttributes.InsertOnSubmit(toUpdate);
-            }
-
-            string iv, hmac;
-            byte version;
-            var updated = Current.Encrypt(value, out iv, out version, out hmac);
-
-            if (updated.Length > 267)
-            {
-                message = UserAttributeTypeId.GetDisplayName(attribute) + " is too long.";
-                return false;
-            }
-
-            toUpdate.Encrypted = updated;
-            toUpdate.IV = iv;
-            toUpdate.KeyVersion = version;
-            toUpdate.HMAC = hmac;
-
-            message = null;
-            return true;
         }
 
         private static Regex AllowedVanityIdRegex = new Regex(@"^[a-z0-9\.\-]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -407,39 +417,6 @@ namespace OpenIdProvider.Models
         }
 
         /// <summary>
-        /// Get the value of an attribute for this user (such as Email) by the id of the attribute.
-        /// 
-        /// Returns null if the attribute is not set.
-        /// </summary>
-        public string GetAttribute(byte attrId)
-        {
-            var encrypted = Current.ReadDB.UserAttributes.SingleOrDefault(u => u.UserAttributeTypeId == attrId && u.UserId == Id);
-
-            if (encrypted == null) return null;
-
-            bool outOfDate;
-            var ret = Current.Decrypt(encrypted.Encrypted, encrypted.IV, encrypted.KeyVersion, encrypted.HMAC, out outOfDate);
-
-            // The key has changed since this was accessed, so do a spot update
-            if (outOfDate)
-            {
-                var needsUpdate = Current.WriteDB.UserAttributes.Single(a => a.Id == encrypted.Id);
-
-                string iv, hmac;
-                byte version;
-                var updated = Current.Encrypt(ret, out iv, out version, out hmac);
-                needsUpdate.Encrypted = ret;
-                needsUpdate.IV = iv;
-                needsUpdate.KeyVersion = version;
-                needsUpdate.HMAC = hmac;
-
-                Current.WriteDB.SubmitChanges();
-            }
-
-            return ret;
-        }
-
-        /// <summary>
         /// Creates a Uri describing this users "claimed identifier".
         /// </summary>
         public Uri GetClaimedIdentifier()
@@ -624,50 +601,53 @@ namespace OpenIdProvider.Models
         /// </summary>
         public static User FindUserByEmail(string email)
         {
-            var db = Current.WriteDB;
-
-            string emailHash;
-            byte emailSaltVersion;
-            emailHash = Current.SystemHash(email, out emailSaltVersion);
-
-            // Checking against the current salt...
-            var user = db.Users.SingleOrDefault(u => u.EmailHash == emailHash && u.EmailSaltVersion == emailSaltVersion);
-
-            // Didn't find the user?  Maybe the salt has changed
-            if (user == null)
+            using (MiniProfiler.Current.Step("FindUserByEmail"))
             {
-                foreach (var oldSalt in KeyStore.OldSalts)
+                var db = Current.WriteDB;
+
+                string emailHash;
+                byte emailSaltVersion;
+                emailHash = Current.SystemHash(email, out emailSaltVersion);
+
+                // Checking against the current salt...
+                var user = db.Users.SingleOrDefault(u => u.EmailHash == emailHash && u.EmailSaltVersion == emailSaltVersion);
+
+                // Didn't find the user?  Maybe the salt has changed
+                if (user == null)
                 {
-                    var emailSalt = oldSalt.Item2;
-                    emailHash = Current.SecureHash(email, emailSalt);
+                    foreach (var oldSalt in KeyStore.OldSalts)
+                    {
+                        var emailSalt = oldSalt.Item2;
+                        emailHash = Current.SecureHash(email, emailSalt);
 
-                    user = db.Users.SingleOrDefault(u => u.EmailHash == emailHash && u.EmailSaltVersion == oldSalt.Item1);
+                        user = db.Users.SingleOrDefault(u => u.EmailHash == emailHash && u.EmailSaltVersion == oldSalt.Item1);
 
-                    if (user != null) break;
+                        if (user != null) break;
+                    }
+
+                    // Update the user's hash and salt, so they're on the latest and greatest one
+                    if (user != null)
+                    {
+                        byte newSaltVersion;
+                        var newHash = Current.SystemHash(email, out newSaltVersion);
+
+                        user.EmailHash = newHash;
+                        user.EmailSaltVersion = newSaltVersion;
+
+                        try
+                        {
+                            db.SubmitChanges();
+                        }
+                        catch (Exception e)
+                        {
+                            Current.LogException(new Exception("Updating email hash lead to conflict", e));
+                            // Data is still fine, continue until we can intervene manually...
+                        }
+                    }
                 }
 
-                // Update the user's hash and salt, so they're on the latest and greatest one
-                if (user != null)
-                {
-                    byte newSaltVersion;
-                    var newHash = Current.SystemHash(email, out newSaltVersion);
-
-                    user.EmailHash = newHash;
-                    user.EmailSaltVersion = newSaltVersion;
-
-                    try
-                    {
-                        db.SubmitChanges();
-                    }
-                    catch (Exception e)
-                    {
-                        Current.LogException(new Exception("Updating email hash lead to conflict", e));
-                        // Data is still fine, continue until we can intervene manually...
-                    }
-                }
+                return user;
             }
-
-            return user;
         }
     }
 }

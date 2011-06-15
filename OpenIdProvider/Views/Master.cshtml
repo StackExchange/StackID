@@ -1,13 +1,14 @@
 ﻿@using OpenIdProvider
+@using MvcMiniProfiler
 
-@{
-    var provider = new Uri(Current.RequestUri, Response.ApplyAppPathModifier("~/openid/provider"));
+@using(MiniProfiler.Current.Step("Master.cshtml")){
+
+var provider = new Uri(Current.RequestUri, Response.ApplyAppPathModifier("~/openid/provider"));
     
-    var title = (string)ViewData["Title"];
-    if(title.IsNullOrEmpty())
-    {
-        title = (string)ViewData["PageTitle"];
-    }
+var title = (string)ViewData["Title"];
+if(title.IsNullOrEmpty())
+{
+    title = (string)ViewData["PageTitle"];
 }
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -26,6 +27,11 @@
             <link rel="openid.server" href="@provider">
             <link rel="openid2.provider" href="@provider">
         </text>
+        
+        if (Current.LoggedInUser != null && Current.LoggedInUser.IsAdministrator)
+        {
+            @MvcMiniProfiler.MiniProfiler.RenderIncludes()
+        }
     }
     else
     {
@@ -50,6 +56,10 @@
         if (Request.HttpMethod != "POST")
         {
             <script type="text/javascript">affiliate.checkXSRF();</script>
+        }
+        else
+        {
+            <script type="text/javascript">affiliate.failNoCanary('@Current.AppRootUri');</script>
         }
     }
     </head>
@@ -95,7 +105,10 @@
             <div id="mainbar">
                 <h2 class="page-header">@ViewData["Title"]</h2>
 
-                @RenderBody()
+                @using(MiniProfiler.Current.Step("RenderBody"))
+                {
+                    @RenderBody()
+                }
             </div>
 
             <div id="footer">
@@ -108,8 +121,13 @@
         <div id="framed-content">
             <h2 class="page-header">@ViewData["Title"]</h2>
 
-            @RenderBody()
+            @using(MiniProfiler.Current.Step("RenderBody"))
+            {
+                @RenderBody()
+            }
         </div>
     }    
 </body>
 </html>
+    
+}

@@ -1,0 +1,23 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Form Mangled on Submission";
+}
+
+<div class="error">
+    <p>A mangled FORM submission was received.</p>
+</div>
+
+<div class="explanation">
+    <p>
+        Your browser (or a proxy in front of your browser) has submitted a form via GET instead of POST, losing data in the process.<br />
+        You should try again with extensions disabled, with a different browser, and without going through a proxy (if possible).<br />
+        <br />
+        @if (!Current.ShouldBustFrames)
+        {
+            <text>
+                As a last resort, log in or register directly at <a href="@Current.AppRootUri">@Current.SiteName</a> and manually enter <code>@Current.AppRootUri</code> into any OpenID submission forms.
+            </text>
+        }
+    </p>
+</div>

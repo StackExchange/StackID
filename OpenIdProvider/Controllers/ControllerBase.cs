@@ -6,6 +6,7 @@ using System.Web.Mvc;
 using OpenIdProvider.Helpers;
 using OpenIdProvider;
 using System.IO.Compression;
+using MvcMiniProfiler;
 
 namespace OpenIdProvider.Controllers
 {
@@ -19,28 +20,29 @@ namespace OpenIdProvider.Controllers
     {
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            Current.Controller = filterContext.Controller;
-
-            // Sometimes we know that we want to reject a request, but also want to show the user
-            //   something when it happens, so we check here.
-            //   Special exception for /openid/provider, since its a "special" route that dodges all our Route magic
-            var path = filterContext.HttpContext.Request.Url.AbsolutePath;
-
-            if (path != "/openid/provider" && path != "/affiliate/form/switch" && Current.RejectRequest)
+            using (MiniProfiler.Current.Step("OnActionExecuting"))
             {
-                filterContext.Result = NotFound();
-                return;
-            }
+                Current.Controller = filterContext.Controller;
+                var path = filterContext.HttpContext.Request.Url.AbsolutePath.ToLowerInvariant();
 
-            if (IPBanner.IsBanned(Current.RemoteIP))
-            {
-                filterContext.Result = Banned();
-                return;
-            }
+                // Sometimes we know that we want to reject a request, but also want to show the user
+                //   something when it happens, so we check here.
+                //   Special exception for /openid/provider, since its a "special" route that dodges all our Route magic
+                if (path != "/openid/provider" && path != "/affiliate/form/switch" && Current.RejectRequest)
+                {
+                    filterContext.Result = NotFound();
+                    return;
+                }
 
-            // On prod, we can either be running with IIS handling SSL, *or* behind an SSL accelerator
-            //   If we're not getting direct SSL, check against the a trusted port we've locked down
-            //   for discussion between the accelerator(s) and the web tier
+                if (IPBanner.IsBanned(Current.RemoteIP))
+                {
+                    filterContext.Result = Banned();
+                    return;
+                }
+
+                // On prod, we can either be running with IIS handling SSL, *or* behind an SSL accelerator
+                //   If we're not getting direct SSL, check against the a trusted port we've locked down
+                //   for discussion between the accelerator(s) and the web tier
 #if !DEBUG
             if (!filterContext.HttpContext.Request.IsSecureConnection)
             {
@@ -59,71 +61,89 @@ namespace OpenIdProvider.Controllers
             }
 #endif
 
-            // Handle Acccept-Encoding
-            //   As a site note: why, in the year 2011 (offically "the future") do we have to opt into this stuff?
-            var acceptEncoding = filterContext.HttpContext.Request.Headers["Accept-Encoding"];
-            if (acceptEncoding.HasValue())
-            {
-                acceptEncoding = acceptEncoding.ToLowerInvariant();
-                var response = filterContext.HttpContext.Response;
+                // Handle Acccept-Encoding
+                //   As a site note: why, in the year 2011 (offically "the future") do we have to opt into this stuff?
+                var acceptEncoding = filterContext.HttpContext.Request.Headers["Accept-Encoding"];
+                if (acceptEncoding.HasValue())
+                {
+                    acceptEncoding = acceptEncoding.ToLowerInvariant();
+                    var response = filterContext.HttpContext.Response;
 
-                if (acceptEncoding.Contains("gzip"))
-                {
-                    response.AppendHeader("Content-Encoding", "gzip");
-                    response.Filter = new GZipStream(response.Filter, CompressionMode.Compress);
-                }
-                else
-                {
-                    if (acceptEncoding.Contains("deflate"))
+                    if (acceptEncoding.Contains("gzip"))
                     {
-                        response.AppendHeader("Content-Encoding", "deflate");
-                        response.Filter = new DeflateStream(response.Filter, CompressionMode.Compress);
+                        response.AppendHeader("Content-Encoding", "gzip");
+                        response.Filter = new GZipStream(response.Filter, CompressionMode.Compress);
+                    }
+                    else
+                    {
+                        if (acceptEncoding.Contains("deflate"))
+                        {
+                            response.AppendHeader("Content-Encoding", "deflate");
+                            response.Filter = new DeflateStream(response.Filter, CompressionMode.Compress);
+                        }
                     }
                 }
-            }
 
-            base.OnActionExecuting(filterContext);
+                base.OnActionExecuting(filterContext);
+            }
         }
 
         protected override void OnResultExecuting(ResultExecutingContext filterContext)
         {
-            // An extra layer of defense against embedding frames in unauthorized domains
-            //   We still need the javascript frame busting since older browsers (IE7 and FF3.5) don't
-            //   honor this header.
-            // See: https://developer.mozilla.org/en/the_x-frame-options_response_header
-            if (Current.ShouldBustFrames)
+            using (MiniProfiler.Current.Step("OnResultExecuting"))
             {
-               filterContext.HttpContext.Response.Headers.Add("X-Frame-Options", "DENY");
-            }
-
-            // Generic "try that again" infrastrcture to shove previously seen values back into forms.
-            if (filterContext.HttpContext.Request.QueryString.AllKeys.Contains("recover") && filterContext.HttpContext.Request.HttpMethod == "GET")
-            {
-                var recoverKey = filterContext.HttpContext.Request.QueryString["recover"];
-
-                if (recoverKey.HasValue())
+                // An extra layer of defense against embedding frames in unauthorized domains
+                //   We still need the javascript frame busting since older browsers (IE7 and FF3.5) don't
+                //   honor this header.
+                // See: https://developer.mozilla.org/en/the_x-frame-options_response_header
+                if (Current.ShouldBustFrames)
                 {
-                    var recover = Current.GetFromCache<Dictionary<string, string>>(recoverKey);
+                    filterContext.HttpContext.Response.Headers.Add("X-Frame-Options", "DENY");
+                }
 
-                    if (recover != null)
+                // Generic "try that again" infrastrcture to shove previously seen values back into forms.
+                if (filterContext.HttpContext.Request.QueryString.AllKeys.Contains("recover") && filterContext.HttpContext.Request.HttpMethod == "GET")
+                {
+                    var recoverKey = filterContext.HttpContext.Request.QueryString["recover"];
+
+                    if (recoverKey.HasValue())
                     {
-                        foreach (var key in recover.Keys)
-                        {
-                            ViewData[key] = recover[key];
-                        }
+                        var recover = Current.GetFromCache<Dictionary<string, string>>(recoverKey);
 
-                        Current.RemoveFromCache(recoverKey);
+                        if (recover != null)
+                        {
+                            foreach (var key in recover.Keys)
+                            {
+                                ViewData[key] = recover[key];
+                            }
+
+                            Current.RemoveFromCache(recoverKey);
+                        }
                     }
                 }
+
+                // Advertise the xrds location
+                filterContext.HttpContext.Response.Headers.Add(
+                    "X-XRDS-Location",
+                    new Uri(Current.AppRootUri, filterContext.HttpContext.Response.ApplyAppPathModifier("~/xrds")).ToString()
+                );
+
+                if (Current.NoCache)
+                {
+                    // http://stackoverflow.com/questions/49547/making-sure-a-web-page-is-not-cached-across-all-browsers
+                    var response = filterContext.HttpContext.Response;
+                    response.AppendHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+                    response.AppendHeader("Pragma", "no-cache"); // HTTP 1.0.
+                    response.AppendHeader("Expires", "0"); // Proxies.
+                }
+
+                base.OnResultExecuting(filterContext);
             }
+        }
 
-            // Advertise the xrds location
-            filterContext.HttpContext.Response.Headers.Add(
-                "X-XRDS-Location",
-                new Uri(Current.AppRootUri, filterContext.HttpContext.Response.ApplyAppPathModifier("~/xrds")).ToString()
-            );
-
-            base.OnResultExecuting(filterContext);
+        public ActionResult PostExpectedAndNotReceived()
+        {
+            return View("PostExpectedAndNotReceived");
         }
 
         /// <summary>

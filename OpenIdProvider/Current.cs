@@ -17,6 +17,10 @@ using System.Web.Mvc;
 using System.Reflection;
 using BookSleeve;
 using ProtoBuf;
+using MvcMiniProfiler;
+using MvcMiniProfiler.Data;
+using System.Data.SqlClient;
+using System.Data.Common;
 
 namespace OpenIdProvider
 {
@@ -395,6 +399,49 @@ namespace OpenIdProvider
         }
 
         /// <summary>
+        /// Set on requests that were sent to routes expecting POST, but
+        /// POST was not sent.
+        /// 
+        /// Used for displaying better error messages, because this event
+        /// happens quite a bit lower in the stack than any Controller events.
+        /// </summary>
+        public static bool PostExpectedAndNotReceived
+        {
+            get
+            {
+                var cached = GetFromContext<string>("PostExpectedAndNotReceived");
+                if (cached == null) return false;
+
+                return bool.Parse(cached);
+            }
+            set
+            {
+                SetInContext("PostExpectedAndNotReceived", value.ToString());
+            }
+        }
+
+        /// <summary>
+        /// When set, overrides default cache directives to explicitly indicate
+        /// that a response should not be cached at all.
+        /// 
+        /// This is done via Cache-Control and Pragma headers, ultimately.
+        /// </summary>
+        public static bool NoCache
+        {
+            get
+            {
+                var cached = GetFromContext<string>("NoCache");
+                if (cached == null) return false;
+
+                return bool.Parse(cached);
+            }
+            set
+            {
+                SetInContext("NoCache", value.ToString());
+            }
+        }
+
+        /// <summary>
         /// Returns whether the current request should result in a 
         /// page that tries to bust out of frames.
         /// 
@@ -430,7 +477,7 @@ namespace OpenIdProvider
 
                 if (cached != null) return cached;
 
-                cached = new DBContext(ReadConnectionString);
+                cached = GetDB(ReadConnectionString);
 
                 SetInContext("ReadDB", cached);
                 return cached;
@@ -453,8 +500,7 @@ namespace OpenIdProvider
 
                 if (cached == null)
                 {
-                    cached = new DBContext(WriteConnectionString);
-
+                    cached = GetDB(WriteConnectionString);
                     SetInContext("WriteDB", cached);
                 }
 
@@ -463,6 +509,14 @@ namespace OpenIdProvider
 
                 return cached;
             }
+        }
+
+        private static DBContext GetDB(string connectionString)
+        {
+            var conn = new SqlConnection(connectionString);
+            var wrapped = ProfiledDbConnection.Get(conn);
+
+            return new DBContext(wrapped);
         }
 
         /// <summary>
@@ -511,19 +565,29 @@ namespace OpenIdProvider
             get
             {
                 var cached = GetFromContext<User>("LoggedInUser");
-
                 if (cached != null) return cached;
 
-                var cookie = HttpContext.Current.CookieSentOrReceived(UserCookieName);
+                using (MiniProfiler.Current.Step("LoggedInUser"))
+                {
+                    var cookie = HttpContext.Current.CookieSentOrReceived(UserCookieName);
 
-                if (cookie == null || cookie.Value == null) return null;
+                    if (cookie == null || cookie.Value == null) return null;
 
-                var hash = Current.WeakHash(cookie.Value);
-                cached = Current.ReadDB.Users.SingleOrDefault(u => u.SessionHash == hash);
-                
-                SetInContext("LoggedInUser", cached);
+                    var hash = Current.WeakHash(cookie.Value);
+                    cached = Current.ReadDB.Users.SingleOrDefault(u => u.SessionHash == hash);
 
-                return cached;
+                    SetInContext("LoggedInUser", cached);
+
+                    if (cached != null && cached.IsAdministrator)
+                    {
+                        if (!HttpContext.Current.Request.Cookies.AllKeys.Contains(MvcApplication.ProfilerCookieName))
+                        {
+                            HttpContext.Current.Response.Cookies.Add(new HttpCookie(MvcApplication.ProfilerCookieName, "and-its-going-fast"));
+                        }
+                    }
+
+                    return cached;
+                }
             }
 
             set
@@ -802,7 +866,6 @@ namespace OpenIdProvider
 
                     redis.SetWithExpiry(RedisDB.Value.Value, "oid-" + name, (int)expiresIn.TotalSeconds, bytes, true);
                 }
-
             }
         }
 
@@ -925,10 +988,13 @@ namespace OpenIdProvider
         /// </summary>
         private static string MakeAuthCode(byte[] toSign, HMAC hmac = null)
         {
-            if (hmac == null) hmac = HMAC;
+            using (MiniProfiler.Current.Step("MakeAuthCode"))
+            {
+                if (hmac == null) hmac = HMAC;
 
-            lock (hmac)
-                return Convert.ToBase64String(hmac.ComputeHash(toSign));
+                lock (hmac)
+                    return Convert.ToBase64String(hmac.ComputeHash(toSign));
+            }
         }
 
         /// <summary>
@@ -971,26 +1037,29 @@ namespace OpenIdProvider
         /// </summary>
         public static string Encrypt(string value, out string iv, out byte version, out string hmac)
         {
-            version = AesKeyVersion;
-            var ivBytes = Random(16);
-            iv = Convert.ToBase64String(ivBytes);
-
-            ICryptoTransform encryptor;
-
-            lock (AesProvider)
-                encryptor = AesProvider.CreateEncryptor(AesKey, ivBytes);
-
-            byte[] output;
-
-            using (encryptor)
+            using (MiniProfiler.Current.Step("Encrypt"))
             {
-                var input = Encoding.UTF8.GetBytes(value);
-                output = encryptor.TransformFinalBlock(input, 0, input.Length);
+                version = AesKeyVersion;
+                var ivBytes = Random(16);
+                iv = Convert.ToBase64String(ivBytes);
+
+                ICryptoTransform encryptor;
+
+                lock (AesProvider)
+                    encryptor = AesProvider.CreateEncryptor(AesKey, ivBytes);
+
+                byte[] output;
+
+                using (encryptor)
+                {
+                    var input = Encoding.UTF8.GetBytes(value);
+                    output = encryptor.TransformFinalBlock(input, 0, input.Length);
+                }
+
+                hmac = MakeAuthCode(output);
+
+                return Convert.ToBase64String(output);
             }
-
-            hmac = MakeAuthCode(output);
-
-            return Convert.ToBase64String(output);
         }
 
         /// <summary>
@@ -1004,47 +1073,50 @@ namespace OpenIdProvider
         /// </summary>
         public static string Decrypt(string encrypted, string iv, byte version, string hmac, out bool outOfDate)
         {
-            outOfDate = false;
-
-            var encryptedBytes = Convert.FromBase64String(encrypted);
-            var ivBytes = Convert.FromBase64String(iv);
-
-            // Value encrypted using an old key encountered
-            if (version != AesKeyVersion)
+            using (MiniProfiler.Current.Step("Decrypt"))
             {
-                var oldKey = KeyStore.GetKey(version);
+                outOfDate = false;
 
-                // Different crypto keys means different hmac keys, gotta spin up an old one
-                var oldHmac = new HMACSHA1();
-                oldHmac.Key = Convert.FromBase64String(oldKey.HMAC);
+                var encryptedBytes = Convert.FromBase64String(encrypted);
+                var ivBytes = Convert.FromBase64String(iv);
 
-                if (hmac != Convert.ToBase64String(oldHmac.ComputeHash(Convert.FromBase64String(encrypted))))
-                    throw new Exception("HMAC validation failed on encrypted value (key version = " + oldKey.Version + ")");
+                // Value encrypted using an old key encountered
+                if (version != AesKeyVersion)
+                {
+                    var oldKey = KeyStore.GetKey(version);
 
-                ICryptoTransform oldDecryptor;
+                    // Different crypto keys means different hmac keys, gotta spin up an old one
+                    var oldHmac = new HMACSHA1();
+                    oldHmac.Key = Convert.FromBase64String(oldKey.HMAC);
 
+                    if (hmac != Convert.ToBase64String(oldHmac.ComputeHash(Convert.FromBase64String(encrypted))))
+                        throw new Exception("HMAC validation failed on encrypted value (key version = " + oldKey.Version + ")");
+
+                    ICryptoTransform oldDecryptor;
+
+                    lock (AesProvider)
+                        oldDecryptor = AesProvider.CreateDecryptor(Convert.FromBase64String(oldKey.Encryption), ivBytes);
+
+
+                    var retBytes = oldDecryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
+
+                    outOfDate = true;
+                    return Encoding.UTF8.GetString(retBytes);
+                }
+
+                var shouldMatchHMAC = MakeAuthCode(Convert.FromBase64String(encrypted));
+
+                if (hmac != shouldMatchHMAC)
+                    throw new Exception("HMAC validation failed on encrypted value");
+
+                ICryptoTransform decryptor;
                 lock (AesProvider)
-                    oldDecryptor = AesProvider.CreateDecryptor(Convert.FromBase64String(oldKey.Encryption), ivBytes);
-                
+                    decryptor = AesProvider.CreateDecryptor(AesKey, ivBytes);
 
-                var retBytes = oldDecryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
+                var ret = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
 
-                outOfDate = true;
-                return Encoding.UTF8.GetString(retBytes);
+                return Encoding.UTF8.GetString(ret);
             }
-
-            var shouldMatchHMAC = MakeAuthCode(Convert.FromBase64String(encrypted));
-
-            if (hmac != shouldMatchHMAC)
-                throw new Exception("HMAC validation failed on encrypted value");
-
-            ICryptoTransform decryptor;
-            lock (AesProvider)
-                decryptor = AesProvider.CreateDecryptor(AesKey, ivBytes);
-
-            var ret = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
-
-            return Encoding.UTF8.GetString(ret);
         }
 
         /// <summary>
@@ -1054,11 +1126,14 @@ namespace OpenIdProvider
         /// </summary>
         public static string WeakHash(string value)
         {
-            var hasher = SHA1.Create();
+            using (MiniProfiler.Current.Step("WeakHash"))
+            {
+                var hasher = SHA1.Create();
 
-            byte[] bytes = value.HasValue() ? Encoding.UTF8.GetBytes(value) : new byte[0];
+                byte[] bytes = value.HasValue() ? Encoding.UTF8.GetBytes(value) : new byte[0];
 
-            return Convert.ToBase64String(hasher.ComputeHash(bytes));
+                return Convert.ToBase64String(hasher.ComputeHash(bytes));
+            }
         }
 
         /// <summary>
@@ -1073,10 +1148,13 @@ namespace OpenIdProvider
         /// </summary>
         public static string SystemHash(string value, out byte saltVersion)
         {
-            var salt = SiteWideSalt;
-            saltVersion = KeyStore.LatestKeyVersion;
+            using (MiniProfiler.Current.Step("SystemHash"))
+            {
+                var salt = SiteWideSalt;
+                saltVersion = KeyStore.LatestKeyVersion;
 
-            return SecureHash(value, salt);
+                return SecureHash(value, salt);
+            }
         }
 
         /// <summary>
@@ -1084,9 +1162,12 @@ namespace OpenIdProvider
         /// </summary>
         public static string SecureHash(string value, out string salt)
         {
-            salt = GenerateSalt();
+            using (MiniProfiler.Current.Step("SecureHashMakeSalt"))
+            {
+                salt = GenerateSalt();
 
-            return Hash(value, salt);
+                return Hash(value, salt);
+            }
         }
 
         /// <summary>
@@ -1094,7 +1175,10 @@ namespace OpenIdProvider
         /// </summary>
         public static string SecureHash(string value, string salt)
         {
-            return Hash(value, salt);
+            using (MiniProfiler.Current.Step("SecureHashWithSalt"))
+            {
+                return Hash(value, salt);
+            }
         }
 
         /// <summary>
@@ -1104,12 +1188,15 @@ namespace OpenIdProvider
         /// </summary>
         public static byte[] Random(int bytes)
         {
-            var ret = new byte[bytes];
+            using (MiniProfiler.Current.Step("Random"))
+            {
+                var ret = new byte[bytes];
 
-            lock (RandomSource)
-                RandomSource.GetBytes(ret);
+                lock (RandomSource)
+                    RandomSource.GetBytes(ret);
 
-            return ret;
+                return ret;
+            }
         }
 
         /// <summary>
@@ -1138,15 +1225,18 @@ namespace OpenIdProvider
         /// </summary>
         private static string Hash(string value, string salt)
         {
-            var i = salt.IndexOf('.');
-            var iters = int.Parse(salt.Substring(0, i), System.Globalization.NumberStyles.HexNumber);
-            salt = salt.Substring(i + 1);
-
-            using(var pbkdf2 = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(value), Convert.FromBase64String(salt), iters))
+            using (MiniProfiler.Current.Step("Hash"))
             {
-                var key = pbkdf2.GetBytes(24);
+                var i = salt.IndexOf('.');
+                var iters = int.Parse(salt.Substring(0, i), System.Globalization.NumberStyles.HexNumber);
+                salt = salt.Substring(i + 1);
 
-                return Convert.ToBase64String(key);
+                using (var pbkdf2 = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(value), Convert.FromBase64String(salt), iters))
+                {
+                    var key = pbkdf2.GetBytes(24);
+
+                    return Convert.ToBase64String(key);
+                }
             }
         }
 

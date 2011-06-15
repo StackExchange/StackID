@@ -20,6 +20,25 @@ namespace OpenIdProvider
     public static class ExtensionMethods
     {
         /// <summary>
+        /// Create an inline-able string from (something that purports to be) a url.
+        /// 
+        /// Will explode if `s` is not a url.
+        /// 
+        /// Meant for places like e-mails where we want to avoid double-encoding, but
+        /// don't want just random garbage finding its way in either.
+        /// </summary>
+        public static HtmlString AsLink(this string s)
+        {
+            Uri u;
+            if (!Uri.TryCreate(s, UriKind.Absolute, out u))
+            {
+                throw new InvalidOperationException("AsLink requires an absolute URL, found [" + s + "]");
+            }
+
+            return new HtmlString(u.AbsoluteUri);
+        }
+
+        /// <summary>
         /// Returns true if this String is neither null or empty.
         /// </summary>
         public static bool HasValue(this string s)
@@ -90,7 +109,12 @@ namespace OpenIdProvider
         /// </summary>
         public static Dictionary<string, string> PropertiesAsStrings(this object @params)
         {
-            var ret = new Dictionary<string, string>();
+            return @params.Properties().ToDictionary(k => k.Key, v => v.Value.ToString());
+        }
+
+        public static Dictionary<string, object> Properties(this object @params)
+        {
+            var ret = new Dictionary<string, object>();
 
             var props = @params.GetType().GetProperties();
 
@@ -98,9 +122,9 @@ namespace OpenIdProvider
             {
                 var key = prop.Name;
                 var value = prop.GetValue(@params, null);
-                
-                if(value != null)
-                    ret[key] = value.ToString();
+
+                if (value != null)
+                    ret[key] = value;
             }
 
             return ret;

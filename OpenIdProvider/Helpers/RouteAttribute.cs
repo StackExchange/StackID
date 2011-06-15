@@ -196,18 +196,35 @@ namespace OpenIdProvider.Helpers
         /// </summary>
         public override bool IsValidForRequest(ControllerContext cc, MethodInfo mi)
         {
+            // Absolutely, positively, do not cache *anything* that is in response to a POST
+            if (AcceptVerbs.HasValue && (AcceptVerbs.Value & HttpVerbs.Post) != 0)
+            {
+                Current.NoCache = true;
+            }
+
             if (AcceptAll) return true;
 
             var verbCheck = !AcceptVerbs.HasValue || (new AcceptVerbsAttribute(AcceptVerbs.Value).IsValidForRequest(cc, mi));
 
             var xsrfCheck = true;
 
+            if(AcceptVerbs.HasValue && (AcceptVerbs.Value | HttpVerbs.Post) != 0 && cc.RequestContext.HttpContext.Request.RequestType != "POST")
+            {
+                Current.RejectRequest = true;
+                Current.PostExpectedAndNotReceived = true;
+                return true;
+            }
+
             if (AcceptVerbs.HasValue && (AcceptVerbs.Value | HttpVerbs.Post) != 0)
             {
                 var fkeyRaw = cc.HttpContext.Request.Form["fkey"];
                 Guid fkey;
 
-                if (!Guid.TryParse(fkeyRaw, out fkey)) return false;
+                if (!Guid.TryParse(fkeyRaw, out fkey))
+                {
+                    Current.RejectRequest = true;
+                    return true;
+                }
                 
                 var fkeyShouldBe = Current.XSRFToken;
 

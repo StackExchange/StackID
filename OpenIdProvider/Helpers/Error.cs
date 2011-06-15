@@ -16,12 +16,15 @@ namespace OpenIdProvider.Helpers
     /// </summary>
     public class Error
     {
+        private static readonly string Obfuscated = "********";
+
         public string Url { get; set; }
         public Dictionary<string, string> Parameters { get; set; }
         public Dictionary<string, string> ReceivedCookies { get; set; }
         public Dictionary<string, string> SendingCookies { get; set; }
         public Dictionary<string, string> ReceivedHeaders { get; set; }
         public Dictionary<string, string> SendingHeaders { get; set; }
+        public Dictionary<string, string> Form { get; set; }
         public string Message { get; set; }
         public string StackTrace { get; set; }
         public Guid Id { get; set; }
@@ -56,17 +59,7 @@ namespace OpenIdProvider.Helpers
                         // Shouldn't ask people to trust us with these in the error logs
                         if (p.Equals("password", StringComparison.InvariantCultureIgnoreCase) || p.Equals("password2", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            var obsfucated = "";
-
-                            if (val.HasValue())
-                            {
-                                for (int i = 0; i < val.Length; i++)
-                                {
-                                    obsfucated += "*";
-                                }
-                            }
-
-                            Parameters[p] = obsfucated;
+                            Parameters[p] = Obfuscated;
                         }
                         else
                         {
@@ -90,6 +83,22 @@ namespace OpenIdProvider.Helpers
                     foreach (var h in req.Headers.AllKeys)
                     {
                         ReceivedHeaders[h] = req.Headers[h];
+                    }
+
+                    Form = new Dictionary<string, string>();
+                    if (req.Form != null)
+                    {
+                        foreach (var f in req.Form.AllKeys)
+                        {
+                            if (f.Equals("password", StringComparison.InvariantCultureIgnoreCase) || f.Equals("password2", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                Form[f] = Obfuscated;
+                            }
+                            else
+                            {
+                                Form[f] = req.Form[f];
+                            }
+                        }
                     }
 
                     SendingHeaders = new Dictionary<string, string>();

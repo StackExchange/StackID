@@ -59,7 +59,7 @@ namespace OpenIdProvider.Helpers
 
             if (@params != null)
             {
-                foreach (var prop in @params.PropertiesAsStrings())
+                foreach (var prop in @params.Properties())
                 {
                     dictView.Add(prop.Key, prop.Value);
                 }

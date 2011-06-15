@@ -7,6 +7,7 @@ using System.Net;
 using MarkdownSharp;
 using System.IO;
 using System.Text;
+using MvcMiniProfiler;
 
 namespace OpenIdProvider.Helpers
 {
@@ -49,13 +50,16 @@ namespace OpenIdProvider.Helpers
         /// </summary>
         private static string GetEmailText(string templateName, object @params, out string subject, out string textVersion)
         {
-            var markdown = Helpers.Template.FormatTemplate(templateName, @params).Trim();
-            int i = markdown.IndexOf('\n');
-            subject = markdown.Substring(0, i + 1).Trim();
+            using (MiniProfiler.Current.Step("GetEmailText"))
+            {
+                var markdown = Helpers.Template.FormatTemplate(templateName, @params).Trim();
+                int i = markdown.IndexOf('\n');
+                subject = markdown.Substring(0, i + 1).Trim();
 
-            textVersion = markdown.Substring(i + 1).Trim();
+                textVersion = markdown.Substring(i + 1).Trim();
 
-            return (new Markdown()).Transform(textVersion);
+                return (new Markdown()).Transform(textVersion);
+            }
         }
 
         /// <summary>
@@ -65,16 +69,19 @@ namespace OpenIdProvider.Helpers
         /// </summary>
         public bool SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
         {
-            var ccList = new List<string>();
-            var bccList = new List<string>();
+            using (MiniProfiler.Current.Step("SendEmail"))
+            {
+                var ccList = new List<string>();
+                var bccList = new List<string>();
 
-            if (cc.HasValue()) ccList.AddRange(cc.Split(';'));
-            if (bcc.HasValue()) bccList.AddRange(bcc.Split(';'));
+                if (cc.HasValue()) ccList.AddRange(cc.Split(';'));
+                if (bcc.HasValue()) bccList.AddRange(bcc.Split(';'));
 
-            string subject, textMessage;
-            var htmlMessage = GetEmailText(Enum.GetName(typeof(Template), templateName), @params, out subject, out textMessage);
+                string subject, textMessage;
+                var htmlMessage = GetEmailText(Enum.GetName(typeof(Template), templateName), @params, out subject, out textMessage);
 
-            return SendEmailImpl(to, ccList, bccList, subject, htmlMessage, textMessage);
+                return SendEmailImpl(to, ccList, bccList, subject, htmlMessage, textMessage);
+            }
         }
 
         /// <summary>
