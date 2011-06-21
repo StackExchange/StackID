@@ -25,6 +25,17 @@ namespace OpenIdProvider.Controllers
             return View();
         }
 
+        [Route("admin/find-user", AuthorizedUser.Administrator)]
+        public ActionResult FindUser(string email)
+        {
+            var user = Models.User.FindUserByEmail(email);
+
+            return
+                user == null ?
+                TextPlain("Not Found") :
+                new ContentResult { ContentType = "text/html", Content = "<html><body><a href='" + user.GetClaimedIdentifier() + "'>user</a></body></html>" };
+        }
+
         /// <summary>
         /// List all errors in a handy web interface
         /// </summary>

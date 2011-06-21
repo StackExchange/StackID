@@ -209,6 +209,8 @@ namespace OpenIdProvider.Models
         /// </summary>
         public static bool CreateAccount(string email, PendingUser pendingUser, DateTime now, string vanity, string realname, out User created, out string errorMessage)
         {
+            email = email.ToLowerInvariant();
+
             if (vanity.HasValue() && !Models.User.IsValidVanityId(vanity, out errorMessage))
             {
                 created = null;
@@ -601,6 +603,8 @@ namespace OpenIdProvider.Models
         /// </summary>
         public static User FindUserByEmail(string email)
         {
+            email = email.ToLowerInvariant();
+
             using (MiniProfiler.Current.Step("FindUserByEmail"))
             {
                 var db = Current.WriteDB;

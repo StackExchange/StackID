@@ -84,7 +84,7 @@ var affiliate = function () {
                     var canary = document.cookie.indexOf('canary');  // testing that cookies are working
 
                     if (canary == -1) {
-                        var x = $('body').empty().append('<h1 class="error">Third Party Cookie Appear To Be Disabled</h1>');
+                        var x = $('body').empty().append('<h1 class="error">Third Party Cookies Appear To Be Disabled</h1>');
                         x.append('<p>This site depends on third-party cookies, please add an exception for <b>' + siteUrl + '</b>.</p>');
                     }
                 }
