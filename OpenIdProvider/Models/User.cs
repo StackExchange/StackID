@@ -181,6 +181,7 @@ namespace OpenIdProvider.Models
             return true;
         }
 
+        private static Regex ValidEmailRegex = new Regex(@"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         /// <summary>
         /// Very simple email validation logic, just checks for a @ and . after it.
         /// 
@@ -192,16 +193,7 @@ namespace OpenIdProvider.Models
 
             email = email.Trim();
 
-            var at = email.IndexOf('@');
-            if (at == -1) return false;
-
-            if (email.Length < at + 2) return false;
-
-            var dot = email.IndexOf('.', at + 2);
-
-            if (dot == -1) return false;
-
-            return true;
+            return ValidEmailRegex.IsMatch(email);
         }
 
         /// <summary>
