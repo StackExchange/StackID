@@ -73,8 +73,8 @@ namespace OpenIdProvider.Helpers
 
             var dif = (acceptWinCenter - created).TotalMinutes;
 
-            // 10 minute total drift permissable
-            if (Math.Abs(dif) >= 5)
+            // 60 minute total drift permissable
+            if (Math.Abs(dif) >= 30)
             {
                 failureReason = "Too much drift (" + dif + ")";
                 return false;
@@ -104,7 +104,7 @@ namespace OpenIdProvider.Helpers
 
             if (!Parse(nonce, out created)) throw new InvalidOperationException("Invalid nonce passed [" + nonce + "]");
 
-            Current.AddToCache("nonce-" + nonce, byIP, TimeSpan.FromMinutes(10));
+            Current.AddToCache("nonce-" + nonce, byIP, TimeSpan.FromMinutes(30));
         }
     }
 }

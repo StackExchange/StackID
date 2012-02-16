@@ -167,14 +167,21 @@ var help = function () {
                 position: "relative"
             });
 
-            actualOverlay.insertBefore(jText);
+            // We want these overlays outside the form, so we don't confuse crummy browser auto-complete detection
+            //   (read: FireFox's crummy auto-complete)
+            $('body').append(actualOverlay);
+            actualOverlay.offset({ top: jText.offset().top, left: jText.offset().left });
 
-            actualOverlay.css("margin-left", "0px");
-
-            // layout correction for chrome/safari
-            if ($.browser.webkit) {
-                actualOverlay.css("margin-top", "2px");
-            }
+            // Now that the overlay isn't in the same parent, we've got to re-layout the overlay whenever the window size changes.
+            $(window).resize(
+                function () {
+                    actualOverlay.offset({ top: jText.offset().top, left: jText.offset().left });
+                    actualOverlay.css({
+                        width: jText.width() + 2,
+                        height: jText.height()
+                    });
+                }
+            );
         }
     }
 
@@ -183,6 +190,44 @@ var help = function () {
         jText.focus(function () { showHideHelpOverlay($(this), /* focus = */true); });
         jText.blur(function () { showHideHelpOverlay($(this)); });
         jText.each(function () { showHideHelpOverlay($(this)); });
+
+        onAutoComplete(jText);
+    };
+
+    
+    var onAutoComplete = function (jText) {
+        // IE gives us an event to detect auto completion, thank god.
+        //    Saves us from having to poll
+        if($.browser.msie) {
+            jText.each(function(){
+                this.attachEvent(
+                    "onpropertychange", 
+                    function () {
+                        var x = event;
+                        var prop = x.propertyName;
+                        if (prop == 'value') {
+                            showHideHelpOverlay(jText);
+                        }
+                    }
+                );
+            });
+
+            return;
+        }
+
+        // Of course... for everything else, we've got to poll for value changes.
+        setInterval(
+            function(){
+                jText.each(
+                    function(){
+                        if($(this).val()) {
+                            showHideHelpOverlay($(this));
+                        }
+                    }
+                );
+            },
+            100
+        );
     };
 
     return {

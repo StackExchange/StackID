@@ -183,6 +183,7 @@
   <ItemGroup>
     <Content Include="Content\img\bg-site.png" />
     <Content Include="Content\img\favicon.ico" />
+    <Content Include="Content\img\manual-entry.png" />
     <Content Include="Content\img\sprites.png" />
     <Content Include="Content\js\master.js" />
     <Content Include="Errors\readme.txt" />
@@ -281,6 +282,8 @@
     <Content Include="Views\Account\DeAuthAffiliate.cshtml" />
     <Content Include="Views\Templates\Home.cshtml" />
     <Content Include="Views\Shared\PostExpectedAndNotReceived.cshtml" />
+    <Content Include="Views\Shared\IrrecoverableErrorWithHelp.cshtml" />
+    <Content Include="Views\Home\ProxyHelp.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />

@@ -46,7 +46,7 @@ namespace OpenIdProvider.Controllers
         /// Identities the specified id.
         /// </summary>
         [Route("user/{id}", RoutePriority.Low, AuthorizedUser.LoggedIn | AuthorizedUser.Anonymous | AuthorizedUser.Administrator)]
-        public ActionResult Identity(string id, bool? xrds)
+        public ActionResult Identity(string id, bool? xrds, string manage)
         {
             if (id.IsNullOrEmpty()) return NotFound();
 
@@ -55,6 +55,23 @@ namespace OpenIdProvider.Controllers
             if (user == null) return NotFound();
 
             var loggedIn = Current.LoggedInUser;
+
+            if (manage.HasValue())
+            {
+                var recovery = SafeRedirect((Func<ActionResult>)(new AccountController()).Recovery);
+
+                if(loggedIn == null)
+                {
+                    return recovery;
+                }
+
+                if (loggedIn.Id != user.Id)
+                {
+                    return SafeRedirect((Func<string, ActionResult>)(new AccountController()).Logout, new { returnUrl = recovery.Url });
+                }
+
+                return SafeRedirect((Func<string, string, string, ActionResult>)(new AccountController()).NewPassword);
+            }
 
             // Need to be an administrator to view a user, unless you *are* that user
             if (loggedIn != null && (loggedIn.Id == user.Id || loggedIn.IsAdministrator))

@@ -7,7 +7,7 @@
 
 @ViewData.HandleErrorMessage()
 
-<form method="post" action="/user/edit/submit" autocomplete="off">
+<form method="post" action="/user/edit/submit">
     <table class="position-table">
         <tr>
             <td>
@@ -28,3 +28,14 @@
     <input type="hidden" name="fkey" value="@(Current.XSRFToken)" />
     <input type="submit" class="orange" value="Update" />
 </form>
+<br>
+<a href="#" onclick="$('#delegate').attr('style', ''); $(this).remove();">Use your own URL to log in</a>
+
+<div id="delegate" style="visibility:hidden">
+    <p>If you want to use your own URL to log in, add the following two tags to the head of the HTML:</p>
+    <code>
+        &lt;link rel="openid2.provider" href="@(Current.Url("openid/provider"))"&gt;<br>
+        &lt;link rel="openid2.local_id" href="@(Model.GetClaimedIdentifier())"&gt;
+    </code>
+    <p>This is known as OpenID delegation.</p>
+</div>

@@ -51,6 +51,17 @@
             </td>
         </tr>
     </table>
+
+    <a href="#" onclick="$('#delegate').attr('style', ''); $(this).remove();">Use your own URL to log in</a>
+
+    <div id="delegate" style="visibility:hidden;height:0px;">
+        <p>If you want to use your own URL to log in, add the following two tags to the head of the HTML:</p>
+        <code>
+            &lt;link rel="openid2.provider" href="@(Current.Url("openid/provider"))"&gt;<br>
+            &lt;link rel="openid2.local_id" href="@(Model.GetClaimedIdentifier())"&gt;
+        </code>
+        <p>This is known as OpenID delegation.</p>
+    </div>
 </div>
 
 <div class="user-history">

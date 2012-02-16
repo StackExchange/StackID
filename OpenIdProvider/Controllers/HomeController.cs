@@ -28,6 +28,18 @@ namespace OpenIdProvider.Controllers
             return IrrecoverableError("An error occurred on the server", "This event has been recorded.");
         }
 
+        [Route("error-with-help")]
+        public ActionResult ErrorWithHelp()
+        {
+            return IrrecoverableErrorWithHelp("An error occurred on the server", "This event has been recorded.");
+        }
+
+        [Route("proxy-help")]
+        public ActionResult ProxyHelp()
+        {
+            return View();
+        }
+
         [Route("")]
         public ActionResult Index()
         {

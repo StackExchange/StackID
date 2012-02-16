@@ -114,6 +114,13 @@ if(title.IsNullOrEmpty())
             <div id="footer">
                 @Html.Raw(OpenIdProvider.Helpers.Template.FormatTemplate("Footer"))
             </div>
+
+            @if (Current.LoggedInUser != null && Current.LoggedInUser.IsAdministrator)
+            {
+                <div id="web">
+                    @Environment.MachineName
+                </div>
+            }
         </div>
     }
     else

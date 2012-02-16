@@ -20,10 +20,14 @@ namespace OpenIdProvider.Controllers
     {
         public ActionResult Ping()
         {
+            var dbCheck = Current.ReadDB.Users.FirstOrDefault();
+            Current.AddToCache("ping-sanity-check", "dummy-value", TimeSpan.FromMinutes(1));
+            var cache = Current.GetFromCache<string>("string-not-found") ?? "";
+
             return
                 new ContentResult
                 {
-                    Content = Environment.MachineName,
+                    Content = Environment.MachineName + cache,
                     ContentType = "text/plain",
                     ContentEncoding = Encoding.UTF8
                 };

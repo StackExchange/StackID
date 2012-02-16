@@ -148,7 +148,7 @@ namespace OpenIdProvider.Controllers
             if (failure)
             {
                 Current.LogException(new Exception("Affiliate Forms failure: " + failureReason));
-                filterContext.Result = NotFound();
+                filterContext.Result = IrrecoverableErrorWithHelp("Affiliate Form failure:", failureReason);
                 return;
             }
 
@@ -255,7 +255,7 @@ namespace OpenIdProvider.Controllers
                 case "signup": return SignupIFrame(null, background, color);
             }
 
-            return NotFound();
+            return UnexpectedState("Tried to switch to an unknown form [" + to + "]");
         }
 
         /// <summary>
@@ -295,7 +295,8 @@ namespace OpenIdProvider.Controllers
         [Route("affiliate/form")]
         public ActionResult LoginOrSignupIFrame(string callback, bool? signupByDefault, string onLoad, string background, string color)
         {
-            if (!CurrentAffiliate.IsValidCallback(callback)) return IrrecoverableError("Invalid Affiliate Callback", "The callback provided is not valid for the detected affiliate, and as such login or signup operations cannot proceed for security reasons.");
+            if (!CurrentAffiliate.IsValidCallback(callback))
+                return IrrecoverableErrorWithHelp("Invalid Affiliate Callback", "The callback provided is not valid for the detected affiliate, and as such login or signup operations cannot proceed for security reasons.");
 
             if (onLoad != null && !OnLoadMessageRegex.IsMatch(onLoad)) return IrrecoverableError("Unsafe onLoad message", "The provided onLoad parameter has been deemed too dangerous to proceed with.");
 
@@ -325,7 +326,7 @@ namespace OpenIdProvider.Controllers
         public ActionResult SignupIFrame(string onLoad, string background, string color)
         {
             // We need this check, as we call this action directly bypassing the RouteAttribute check as well
-            if (Current.LoggedInUser != null) return NotFound();
+            if (Current.LoggedInUser != null) return UnexpectedState("Signing up while already logged in");
 
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
             var callback = Current.GetFromCache<string>(CallbackKey(cookie));
@@ -459,7 +460,7 @@ namespace OpenIdProvider.Controllers
         /// </summary>
         private ActionResult ConfirmLoginIFrame(string callback, string onLoad, string background, string color)
         {
-            if (Current.LoggedInUser == null) return NotFound();
+            if (Current.LoggedInUser == null) return UnexpectedState("Confirming a delegate login while not logged in");
 
             Uri parsedCallback;
             if(Uri.TryCreate(callback, UriKind.Absolute, out parsedCallback))
@@ -511,7 +512,7 @@ namespace OpenIdProvider.Controllers
         /// </summary>
         public ActionResult LoginIFrame(string onLoad, string background, string color)
         {
-            if (Current.LoggedInUser != null) return NotFound();
+            if (Current.LoggedInUser != null) return UnexpectedState("Displaying login form while already logged in");
 
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
             var callback = Current.GetFromCache<string>(CallbackKey(cookie));
@@ -630,7 +631,7 @@ namespace OpenIdProvider.Controllers
 
             var user = Models.User.FindUserByEmail(email);
 
-            if(user == null) return NotFound();
+            if (user == null) return UnexpectedState("Recovering an account that does not exist");
 
             // Don't allow just any affiliate to send these e-mails, only those that the user has
             //   auth'd to sometime in the past.

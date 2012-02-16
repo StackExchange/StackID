@@ -1,4 +1,6 @@
-﻿@using OpenIdProvider
+﻿@model string
+
+@using OpenIdProvider
 
 @{
     ViewData["Title"] = "Logout";
@@ -8,12 +10,13 @@
 
 <div class="explanation">
     <p>
-        Logout of your account.
+        Log out of your account.
     </p>
 </div>
 
 <form method="post" action="/account/logout/submit">
     <input type="hidden" name="fkey" value="@Current.XSRFToken.Value" />
+    <input type="hidden" name="returnurl" value="@Model" />
     <input type="submit" class="orange" value="Logout" />
 </form>
 

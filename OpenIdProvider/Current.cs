@@ -173,11 +173,15 @@ namespace OpenIdProvider
         /// If set (and not running as DEBUG) we can *only* accept HTTP requests
         /// from this IP.  Everything else must be over HTTPS.
         /// </summary>
-        public static string LoadBalancerIP
+        public static string[] LoadBalancerIPs
         {
             get
             {
-                return WebConfigurationManager.AppSettings["LoadBalancerIP"];
+                var knownIps = WebConfigurationManager.AppSettings["LoadBalancerIP"];
+
+                if (knownIps.IsNullOrEmpty()) return new string[0];
+
+                return knownIps.Split(';').Select(s => s.Trim()).ToArray();
             }
         }
 

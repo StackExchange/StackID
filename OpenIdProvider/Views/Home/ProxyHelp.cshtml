@@ -1,0 +1,32 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Working around network errors";
+}
+
+<p>
+Sometimes errors communicating with @(Current.SiteName) can cause issues with the in page forms used to register and login.
+</p>
+
+<h4>Turn off any proxies if possible</h4>
+
+<p>Often times a misbehaving proxy will cache responses, causing problems.  If you can, turn off any proxies between you and @(Current.SiteName).</p>
+
+@if (Current.LoggedInUser == null)
+{
+    <h4>Register directly on @(Current.SiteName)</h4>
+
+    <p>If you're having trouble registering, go directly to the <a href="/account/register">registration page</a> and use that.
+    <br>
+    Once you have verified your email, you can log directly into a site by using their manual OpenID entry form.
+    </p>
+}
+
+<h4>Login manually</h4>
+
+<p>If you're unable to login using our in page form, you can login manually on mosts sites.<br>
+Look for a form that looks like:<br>
+<br>
+<img src="/content/img/manual-entry.png" /><br>
+For most sites, <code>stackexchange.com</code> should work.  If not, try the full <code>https://openid.stackexchange.com</code> url.
+</p>

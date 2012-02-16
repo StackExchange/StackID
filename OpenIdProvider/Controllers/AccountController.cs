@@ -19,19 +19,24 @@ namespace OpenIdProvider.Controllers
         /// Logout page for logged in users.
         /// </summary>
         [Route("account/logout", AuthorizedUser.LoggedIn)]
-        public ActionResult Logout()
+        public ActionResult Logout(string returnUrl)
         {
-            return View();
+            return View((object)returnUrl);
         }
 
         /// <summary>
         /// Handles the submission of /account/logout
         /// </summary>
         [Route("account/logout/submit", HttpVerbs.Post, AuthorizedUser.LoggedIn)]
-        public ActionResult DoLogout()
+        public ActionResult DoLogout(string returnUrl)
         {
             Current.LoggedInUser.Logout(Current.Now);
             Current.LoggedInUser = null;
+
+            if (returnUrl.HasValue())
+            {
+                return Redirect(returnUrl);
+            }
 
             return
                 SafeRedirect(

@@ -10,11 +10,7 @@ using MvcMiniProfiler;
 
 namespace OpenIdProvider.Controllers
 {
-
-    // During dev, we've got a self signed cert somewhere and can just delegate all SSL stuff to 
-#if (DEBUG  && !DEBUG_HTTP)
-    [RequireHttps]
-#endif
+    // During dev, we've got a self signed cert somewhere and can just delegate all SSL stuff to
     [ValidateInput(false)]
     public class ControllerBase : Controller
     {
@@ -51,7 +47,7 @@ namespace OpenIdProvider.Controllers
 
                 var forwardedProto = filterContext.HttpContext.Request.Headers["X-Forwarded-Proto"];
 
-                if (forwardedProto != "https" || originatingIP != Current.LoadBalancerIP)
+                if (forwardedProto != "https" || !Current.LoadBalancerIPs.Contains(originatingIP))
                 {
                     Current.LogException(new Exception("Warning!  Something is talking to the OpenIdProvider nefariously."));
 
@@ -197,9 +193,31 @@ namespace OpenIdProvider.Controllers
         }
 
         /// <summary>
+        /// Identical to IrrecoverableError, but shows the user some guidance since the problem is suspected to be on
+        /// their end.
+        /// 
+        /// Advises them to try 
+        /// </summary>
+        public ActionResult IrrecoverableErrorWithHelp(string title, string message)
+        {
+            ViewData["title"] = title;
+            ViewData["message"] = message;
+
+            return View("IrrecoverableErrorWithHelp");
+        }
+
+        /// <summary>
+        /// Common "what happened here?" result, displays message to the user.
+        /// </summary>
+        public ActionResult UnexpectedState(string message)
+        {
+            Current.LogException(new Exception(message));
+            return IrrecoverableError("Unexpected Situation", message);
+        }
+
+        /// <summary>
         /// Common "something is fishy, bail" security error
         /// </summary>
-        /// <returns></returns>
         public ActionResult GenericSecurityError()
         {
             return IrrecoverableError("Authentication Failure", "It appears that the security of this request has been tampered with.");
