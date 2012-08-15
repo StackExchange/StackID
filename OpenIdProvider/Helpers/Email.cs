@@ -67,6 +67,32 @@ namespace OpenIdProvider.Helpers
         /// 
         /// cc and bcc accept semicolon delimited lists of addresses.
         /// </summary>
+        public bool SendEmail(string to, string customTemplate, string subject, object @params = null, string cc = null, string bcc = null)
+        {
+            using (MiniProfiler.Current.Step("SendEmail"))
+            {
+                var ccList = new List<string>();
+                var bccList = new List<string>();
+
+                if (cc.HasValue()) ccList.AddRange(cc.Split(';'));
+                if (bcc.HasValue()) bccList.AddRange(bcc.Split(';'));
+
+                var textMessage = customTemplate;
+                foreach (var param in @params.PropertiesAsStrings())
+                {
+                    textMessage = textMessage.Replace("{" + param.Key + "}", param.Value);
+                }
+                var htmlMessage = (new Markdown()).Transform(textMessage);
+
+                return SendEmailImpl(to, ccList, bccList, subject, htmlMessage, textMessage);
+            }
+        }
+
+        /// <summary>
+        /// Sends an email.
+        /// 
+        /// cc and bcc accept semicolon delimited lists of addresses.
+        /// </summary>
         public bool SendEmail(string to, Template templateName, object @params = null, string cc = null, string bcc = null)
         {
             using (MiniProfiler.Current.Step("SendEmail"))

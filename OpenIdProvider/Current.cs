@@ -197,6 +197,26 @@ namespace OpenIdProvider
             }
         }
 
+        private static List<int> TrustedAffiliateIdsCached;
+        /// <summary>
+        /// The affiliate ids that are trusted to handle username/password combinations.
+        /// 
+        /// For use when affiliate forms aren't acceptable, but requires a proper security
+        /// audit of the affiliate.
+        /// </summary>
+        public static IEnumerable<int> TrustedAffiliateIds
+        {
+            get
+            {
+                if (TrustedAffiliateIdsCached == null)
+                {
+                    TrustedAffiliateIdsCached = WebConfigurationManager.AppSettings["TrustedAffiliateIds"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToList();
+                }
+
+                return TrustedAffiliateIdsCached;
+            }
+        }
+
         /// <summary>
         /// Initialize an Email instance.
         /// This provides the value (via Lazy) for EmailCached.
@@ -618,7 +638,7 @@ namespace OpenIdProvider
 
                 var headers = HttpContext.Current.Request.Headers;
 
-                return GetRemoteIP(serverVars["REMOTE_ADDR"], headers["X-Forwarded-For"]);
+                return GetRemoteIP(headers["X-Real-IP"], serverVars["REMOTE_ADDR"], headers["X-Forwarded-For"]);
             }
         }
 
@@ -633,8 +653,14 @@ namespace OpenIdProvider
         /// The logic is, basically, if xForwardedFor *has* a value and the apparent
         /// IP (the last one in the hop) is not local; use that.  Otherwise, use remoteAddr.
         /// </summary>
-        public static string GetRemoteIP(string remoteAddr, string xForwardedFor)
+        public static string GetRemoteIP(string realIp, string remoteAddr, string xForwardedFor)
         {
+            // if we've got an authoritative ip, use it
+            if (realIp.HasValue() && !IsPrivateIP(realIp))
+            {
+                return realIp;
+            }
+
             // check if we were forwarded from a proxy
             if (xForwardedFor.HasValue())
             {
@@ -868,7 +894,8 @@ namespace OpenIdProvider
                         bytes = stream.ToArray();
                     }
 
-                    redis.SetWithExpiry(RedisDB.Value.Value, "oid-" + name, (int)expiresIn.TotalSeconds, bytes, true);
+                    var task = redis.SetWithExpiry(RedisDB.Value.Value, "oid-" + name, (int)expiresIn.TotalSeconds, bytes, true);
+                    redis.Wait(task);
                 }
             }
         }
@@ -1018,7 +1045,7 @@ namespace OpenIdProvider
 
             foreach (var prop in props.OrderBy(p => p.Key))
             {
-                signString = prop.Key + "=" + prop.Value + "&";
+                signString += prop.Key + "=" + prop.Value + "&";
             }
 
             // trim off trailing '&'

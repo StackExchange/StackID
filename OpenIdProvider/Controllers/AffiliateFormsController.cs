@@ -25,7 +25,7 @@ namespace OpenIdProvider.Controllers
     /// Unlike the entire rest of the site, we allow authorized third-parties to frame these
     /// things.
     /// </summary>
-    public class AffiliateFormsController : ControllerBase
+    public partial class AffiliateFormsController : ControllerBase
     {
         /// <summary>
         /// The affiliate who requested any form on this page
@@ -111,7 +111,7 @@ namespace OpenIdProvider.Controllers
                         }
                         if (!@params.ContainsKey("authCode"))
                         {
-                            failureReason = "No Nonce";
+                            failureReason = "No Auth Code";
                             failure = true;
                         }
 
@@ -219,6 +219,15 @@ namespace OpenIdProvider.Controllers
 
             failureReason = null;
             return true;
+        }
+
+        /// <summary>
+        /// Set a message to display to users when they don't have third-party cookies enabled, which really shoots the
+        /// whole iframe approach to hell.
+        /// </summary>
+        private void SetThirdPartyCookieFallbackHtml(string html)
+        {
+            ViewData["ThirdPartyCookieFallback"] = html;
         }
 
         /// <summary>
@@ -341,6 +350,10 @@ namespace OpenIdProvider.Controllers
             ViewData["OnLoad"] = onLoad;
             ViewData["Background"] = background;
             ViewData["Color"] = color;
+
+            var registerUrl = Current.Url(SafeRedirect((Func<ActionResult>)(new AccountController()).Register).Url);
+
+            SetThirdPartyCookieFallbackHtml(@"<p>You can still <a href=""" + registerUrl + @""">register manually for a " + Server.UrlEncode(Current.SiteName) + " OpenID</a>.</p>");
 
             return View("SignupIFrame");
         }
@@ -479,6 +492,9 @@ namespace OpenIdProvider.Controllers
             ViewData["Background"] = background;
             ViewData["Color"] = color;
 
+            var continueLink = AddIdentifier(callback, Current.LoggedInUser.GetClaimedIdentifier());
+            SetThirdPartyCookieFallbackHtml(@"<p>You can <a href=""" + continueLink + @""" target=""_top"">continue and log in manually</a> however.</p>");
+
             return View("ConfirmLoginIFrame");
         }
 
@@ -515,7 +531,7 @@ namespace OpenIdProvider.Controllers
             if (Current.LoggedInUser != null) return UnexpectedState("Displaying login form while already logged in");
 
             var cookie = System.Web.HttpContext.Current.CookieSentOrReceived(Current.AnonymousCookieName);
-            var callback = Current.GetFromCache<string>(CallbackKey(cookie));
+            var callback = Current.GetFromCache<string>(CallbackKey(cookie)); // like /users/authenticate
 
             var affId = ViewData["affId"].ToString();
             var switchLink = SwitchLink("signup", affId, background, color, callback, false);
@@ -527,6 +543,9 @@ namespace OpenIdProvider.Controllers
             ViewData["OnLoad"] = onLoad;
             ViewData["Background"] = background;
             ViewData["Color"] = color;
+
+            var continueLink = AddIdentifier(callback, new Uri(Current.Url("")));
+            SetThirdPartyCookieFallbackHtml(@"<p>You can <a href=""" + continueLink + @""" target=""_top"">continue and log in manually</a> however.</p>");
 
             return View("LoginIFrame");
         }
@@ -562,7 +581,7 @@ namespace OpenIdProvider.Controllers
                 return LoginIFrame(null, background, color);
             }
 
-            if(user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
+            if(!user.PasswordMatch(password))
             {
                 // Standard recoverable error stuff doesn't work here, so do it manually
                 ViewData["error_message"] = "Incorrect password";

@@ -78,14 +78,20 @@ var affiliate = function () {
 
         // Replace the entire page with a warning about third-party cookies
         //   if the canary cookie isn't present.
-        failNoCanary: function (siteUrl) {
+        failNoCanary: function (siteUrl, fallback) {
             $(
                 function () {
                     var canary = document.cookie.indexOf('canary');  // testing that cookies are working
 
                     if (canary == -1) {
                         var x = $('body').empty().append('<h1 class="error">Third Party Cookies Appear To Be Disabled</h1>');
-                        x.append('<p>This site depends on third-party cookies, please add an exception for <b>' + siteUrl + '</b>.</p>');
+
+                        // Either use standard boilerplate, or use the explicit override
+                        if (!fallback) {
+                            x.append('<p>This site depends on third-party cookies, please add an exception for <b>' + siteUrl + '</b>.</p>');
+                        } else {
+                            x.append(fallback);
+                        }
                     }
                 }
             );
@@ -424,6 +430,67 @@ var vanity = function () {
             if (vanity.length > 0) {
                 vanity.keyup(enforceRules);
             }
+        }
+    };
+} ();
+
+var admin = function () {
+
+    function findUsersBatch(fkey, buttonSelector, inputSelector, tableSelector) {
+        var area = $(inputSelector).val();
+        area = area.replace(/,/g, ' ').replace(/;/g, ' ').replace(/\n/g, ' ');
+        var lines = area.split(' ');
+
+        var cleaned = [];
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = $.trim(lines[i]);
+
+            if (line) {
+                cleaned.push(line);
+            }
+        }
+
+        var table = $(tableSelector);
+
+        table.empty();
+        table.append('<th><tr><td>Email</td><td>Link</td></tr></th>');
+
+        var fetchData = function () { };
+
+        for (var i = 0; i < cleaned.length; i += 50) {
+            var emails = '';
+            for (var j = 0; j < 50 && j < cleaned.length; j++) {
+                emails += cleaned[i + j] + ' ';
+            }
+
+            emails = $.trim(emails);
+
+            var oldFetch = fetchData;
+            fetchData = function (continueWith) {
+                $.ajax({
+                    url: '/admin/find-users/batch/submit',
+                    data: { fkey: fkey, emails: emails },
+                    dataType: 'json',
+                    type: 'POST',
+                    success: function (data, status, xhr) {
+                        for (var x = 0; x < data.length; x++) {
+                            table.append('<tr><td>' + data[x].Email + '</td><td><a href="' + data[x].Link + '">Link</a></td></tr>');
+                        }
+
+                        setTimeout(continueWith, 100);
+                    },
+                    error: function () {
+                        table.append('<tr><td>ERROR</td><td>ERROR</td></tr>');
+                    }
+                });
+            } (oldFetch);
+        }
+    }
+
+    return {
+        initFindUsersBatch: function (fkey, buttonSelector, inputSelector, tableSelector) {
+            $(buttonSelector).click(function () { findUsersBatch(fkey, buttonSelector, inputSelector, tableSelector); });
         }
     };
 } ();

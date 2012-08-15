@@ -15,7 +15,8 @@
 
 <script type="text/javascript" src="/Content/js/master.js"></script>
 <script type="text/javascript">
-    affiliate.redirect('@Model');
+    var target = '@(new HtmlString(Model))';
+    affiliate.redirect(target);
 </script>
 
 <noscript>

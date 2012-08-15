@@ -82,8 +82,7 @@ namespace OpenIdProvider.Controllers
                 IPBanner.BadLoginAttempt(user, Current.RemoteIP);
                 return RecoverableError("No account with this email found", new { email, session });
             }
-
-            if (user.PasswordHash != Current.SecureHash(password, user.PasswordSalt))
+            if (!user.PasswordMatch(password))
             {
                 IPBanner.BadLoginAttempt(user, Current.RemoteIP);
                 return RecoverableError("Incorrect password", new { email, session });
@@ -226,10 +225,8 @@ namespace OpenIdProvider.Controllers
         /// <summary>
         /// Handles the submission from /account/recovery.
         /// 
-        /// Actually sends an email containing a 
+        /// Actually sends an email containing a password recovery link
         /// </summary>
-        /// <param name="email"></param>
-        /// <returns></returns>
         [Route("account/recovery/submit", HttpVerbs.Post, AuthorizedUser.Anonymous)]
         public ActionResult SendRecovery(string email)
         {
@@ -421,7 +418,7 @@ namespace OpenIdProvider.Controllers
         [Route("account/affiliate/complete-registration", AuthorizedUser.Anonymous)]
         public ActionResult CompleteAffiliateTriggeredRegistration(string email, string realname, string affId, string token, string callback, string authCode)
         {
-            var shouldMatch = Current.MakeAuthCode(new { email, token, realname, callback, affId });
+            var shouldMatch = Current.MakeAuthCode(new { email, token, realname });
 
             if (shouldMatch != authCode) return GenericSecurityError();
 

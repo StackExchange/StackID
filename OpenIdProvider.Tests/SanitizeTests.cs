@@ -88,11 +88,11 @@ namespace OpenIdProvider.Tests
         [Test]
         public void RemoteIP()
         {
-            Assert.AreEqual("127.0.0.1", Current.GetRemoteIP("127.0.0.1", "127.0.0.1"));
-            Assert.AreEqual("64.34.128.1", Current.GetRemoteIP("64.34.128.1", "127.0.0.1"));
-            Assert.AreEqual("12.34.56.78", Current.GetRemoteIP("64.34.128.1", "12.34.56.78"));
-            Assert.AreEqual("64.34.128.1", Current.GetRemoteIP("64.34.128.1", "10.10.10.1"));
-            Assert.AreEqual("66.90.104.167", Current.GetRemoteIP("64.34.119.10", "66.90.104.167"));
+            Assert.AreEqual("127.0.0.1", Current.GetRemoteIP("", "127.0.0.1", "127.0.0.1"));
+            Assert.AreEqual("64.34.128.1", Current.GetRemoteIP("", "64.34.128.1", "127.0.0.1"));
+            Assert.AreEqual("12.34.56.78", Current.GetRemoteIP("", "64.34.128.1", "12.34.56.78"));
+            Assert.AreEqual("64.34.128.1", Current.GetRemoteIP("", "64.34.128.1", "10.10.10.1"));
+            Assert.AreEqual("66.90.104.167", Current.GetRemoteIP("", "64.34.119.10", "66.90.104.167"));
         }
     }
 }

@@ -1,0 +1,68 @@
+﻿@using OpenIdProvider
+@model IEnumerable<OpenIdProvider.Models.IPBan>
+
+@{
+    ViewData["Title"] = "Import ASP.NET User Credentials";
+}
+
+<p>Place on each line: <code>email</code>, <code>password salt</code>, <code>password hash</code>.<br>
+That is, comma delimit each field.  Extra whitespace is fine.
+</p>
+
+<div id="result" class="dno">
+</div>
+
+<div>
+    <textarea id="import" cols="50" rows="50"></textarea>
+    <br>
+    <button id="do-import">Import</button>
+</div>
+
+<script type="text/javascript">
+    function handleResponse(data) {
+        $(result).append('<div>' + data + '</div>');
+    }
+
+    function doImport(email, salt, password, continueWith) {
+        $.post(
+            '/admin/import-aspnet/submit',
+            { email: email, salt: salt, password: password, fkey: '@(Current.XSRFToken.Value)' },
+            function (data, status, xhr) {
+                handleResponse(data);
+
+                if (continueWith) {
+                    continueWith();
+                }
+            }
+        );
+    }
+
+    $(function () {
+        var importButton = $('#do-import');
+        var textarea = $('#import')
+
+        $('#result').empty();
+
+        importButton.click(
+            function () {
+                importButton.attr('disabled', 'disabled');
+                textarea.attr('disabled', 'disabled');
+
+                var data = textarea.val().split('\n');
+
+                var go = function () { handleResponse('<font color="green">finished</font>') importButton.removeAttr('disabled'); textarea.removeAttr('disabled'); };
+
+                for (var i = 0; i < data.length; i++) {
+                    var line = data[i].split(',');
+                    var email = line[0];
+                    var salt = line[1];
+                    var password = line[2];
+
+                    go = (function (e, s, p, g) { return function () { doImport($.trim(e), $.trim(s), $.trim(p), g); }; } (email, salt, password, go));
+                }
+
+                go();
+            }
+        );
+    });
+</script>

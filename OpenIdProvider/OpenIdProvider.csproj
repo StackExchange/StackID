@@ -138,6 +138,9 @@
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\AffiliateController.cs" />
     <Compile Include="Controllers\AffiliateFormsController.cs" />
+    <Compile Include="Controllers\AffiliateFormsController.Trusted.cs">
+      <DependentUpon>AffiliateFormsController.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controllers\ControllerBase.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\MonitoringController.cs" />
@@ -156,6 +159,7 @@
     <Compile Include="Helpers\Email.cs" />
     <Compile Include="Helpers\IPBanner.cs" />
     <Compile Include="Helpers\KeyStore.cs" />
+    <Compile Include="Helpers\MembershipCompat.cs" />
     <Compile Include="Helpers\Nonces.cs" />
     <Compile Include="Helpers\Password.cs" />
     <Compile Include="Helpers\RouteAttribute.cs" />
@@ -284,6 +288,8 @@
     <Content Include="Views\Shared\PostExpectedAndNotReceived.cshtml" />
     <Content Include="Views\Shared\IrrecoverableErrorWithHelp.cshtml" />
     <Content Include="Views\Home\ProxyHelp.cshtml" />
+    <Content Include="Views\Admin\FindUsersBatch.cshtml" />
+    <Content Include="Views\Admin\ImportAspNetUsers.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />

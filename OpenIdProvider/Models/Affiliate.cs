@@ -11,6 +11,17 @@ namespace OpenIdProvider.Models
     public partial class Affiliate
     {
         /// <summary>
+        /// Returns true if we trust this affiliate to handle usernames and passwords.
+        /// </summary>
+        public bool IsTrusted
+        {
+            get
+            {
+                return Current.TrustedAffiliateIds.Contains(Id);
+            }
+        }
+
+        /// <summary>
         /// A value derived from HostFilter that can be shown to a user.
         /// 
         /// So, something like meta.*.stackexchange.com -> stackexchange.com.

@@ -35,6 +35,7 @@ if(title.IsNullOrEmpty())
     }
     else
     {
+        // This implies we're in an affiliate iframe
         var backgroundOverriden = false;
         
         <text>
@@ -59,7 +60,9 @@ if(title.IsNullOrEmpty())
         }
         else
         {
-            <script type="text/javascript">affiliate.failNoCanary('@Current.AppRootUri');</script>
+            var fallback = ViewData.ContainsKey("ThirdPartyCookieFallback") ? (string)ViewData["ThirdPartyCookieFallback"] : null;
+            
+            <script type="text/javascript">affiliate.failNoCanary('@Current.AppRootUri', '@(new HtmlString(fallback.HasValue()? fallback : ""))');</script>
         }
     }
     </head>
@@ -118,7 +121,9 @@ if(title.IsNullOrEmpty())
             @if (Current.LoggedInUser != null && Current.LoggedInUser.IsAdministrator)
             {
                 <div id="web">
-                    @Environment.MachineName
+                    @Environment.MachineName &nbsp;
+                    from &nbsp;
+                    @Current.RemoteIP
                 </div>
             }
         </div>

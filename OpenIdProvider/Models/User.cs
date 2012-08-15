@@ -248,7 +248,7 @@ namespace OpenIdProvider.Models
                 return false;
             }
 
-            if (realname.Length > 267)
+            if (nameEncrypted.HasValue() && nameEncrypted.Length > 267)
             {
                 created = null;
                 errorMessage = "Name is too long";
@@ -563,11 +563,11 @@ namespace OpenIdProvider.Models
         /// <summary>
         /// Change this users password, recording in their history that they have done so.
         /// </summary>
-        public void ChangePassword(DateTime now, string newPassword)
+        public void ChangePassword(DateTime now, string newPassword, string comment = null)
         {
             var changeEvent = new UserHistory
             {
-                Comment = "Changed Password",
+                Comment = comment ?? "Changed Password",
                 CreationDate = now,
                 UserHistoryTypeId = UserHistoryTypeId.PasswordChanged,
                 IP = Current.RemoteIP,
@@ -584,8 +584,37 @@ namespace OpenIdProvider.Models
             thisUser.PasswordSalt = salt;
             thisUser.PasswordHash = pwdHash;
             thisUser.LastActivityDate = now;
+            thisUser.PasswordVersion = null; // We have a strong password now, regardless of what was there before
 
             Current.WriteDB.SubmitChanges();
+        }
+
+        /// <summary>
+        /// Returns true if the given password is correct for this user.
+        /// 
+        /// Note that if the user is using an unusual PasswordVersion, 
+        /// it will be updated to the new hotness.
+        /// </summary>
+        public bool PasswordMatch(string password)
+        {
+            if (!PasswordVersion.HasValue)
+            {
+                return PasswordHash == Current.SecureHash(password, PasswordSalt);
+            }
+
+            // ASP.NET MembershipProvider import
+            if (PasswordVersion == MembershipCompat.PasswordVersion)
+            {
+                var isMatch = PasswordHash == MembershipCompat.Hash(password, PasswordSalt);
+
+                if (!isMatch) return false;
+
+                ChangePassword(Current.Now, password, "Security Upgraded");
+
+                return true;
+            }
+
+            throw new InvalidOperationException("Unknown PasswordVersion [" + PasswordVersion + "]");
         }
 
         /// <summary>

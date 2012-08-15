@@ -1,0 +1,24 @@
+﻿@using OpenIdProvider
+
+@{
+    ViewData["Title"] = "Admin Index";
+}
+
+<div class="find-user-batch">
+    <label for="emails">Emails</label>
+    <br />
+    <textarea id="emails" rows="20" cols="30"></textarea>
+    <br />
+    <input type="submit" id="go" value="Find Users" />
+
+    <div>
+        <table id="result" style="width:70%"></table>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        admin.initFindUsersBatch('@Current.XSRFToken', '#go', '#emails', '#result');
+    });
+</script>
+

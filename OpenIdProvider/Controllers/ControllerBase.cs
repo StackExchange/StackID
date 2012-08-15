@@ -49,7 +49,7 @@ namespace OpenIdProvider.Controllers
 
                 if (forwardedProto != "https" || !Current.LoadBalancerIPs.Contains(originatingIP))
                 {
-                    Current.LogException(new Exception("Warning!  Something is talking to the OpenIdProvider nefariously."));
+                    Current.LogException(new Exception("Warning!  Something is talking to the OpenIdProvider nefariously"));
 
                     filterContext.Result = GenericSecurityError();
                     return;

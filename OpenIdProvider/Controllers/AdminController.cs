@@ -17,6 +17,15 @@ namespace OpenIdProvider.Controllers
     public class AdminController : ControllerBase
     {
         /// <summary>
+        /// Route for testing the error handler is functioning.
+        /// </summary>
+        [Route("admin/throw", AuthorizedUser.Administrator)]
+        public ActionResult Throw()
+        {
+            throw new Exception("Test exception via admin/throw");
+        }
+
+        /// <summary>
         /// Simple index of all /admin routes
         /// </summary>
         [Route("admin", AuthorizedUser.Administrator)]
@@ -34,6 +43,31 @@ namespace OpenIdProvider.Controllers
                 user == null ?
                 TextPlain("Not Found") :
                 new ContentResult { ContentType = "text/html", Content = "<html><body><a href='" + user.GetClaimedIdentifier() + "'>user</a></body></html>" };
+        }
+
+        [Route("admin/find-users/batch", AuthorizedUser.Administrator)]
+        public ActionResult FindUsersBatch()
+        {
+            return View();
+        }
+
+        [Route("admin/find-users/batch/submit", HttpVerbs.Post, AuthorizedUser.Administrator)]
+        public ActionResult FindUsersBatchSubmit(string emails)
+        {
+            var ems = emails.Split(' ').Select(s => s.Trim()).ToList();
+
+            var result = new List<User>();
+
+            foreach (var em in ems)
+            {
+                var user = Models.User.FindUserByEmail(em);
+                if (user != null)
+                {
+                    result.Add(user);
+                }
+            }
+
+            return Json(result.Select(s => new { Email = s.Email, Link = s.GetClaimedIdentifier().ToString() }).ToArray());
         }
 
         /// <summary>
@@ -237,6 +271,47 @@ namespace OpenIdProvider.Controllers
                     page,
                     pagesize
                 });
+        }
+
+        [Route("admin/import-aspnet", AuthorizedUser.Administrator)]
+        public ActionResult ImportAspNetUsers()
+        {
+            return View();
+        }
+
+        [Route("admin/import-aspnet/submit", HttpVerbs.Post, AuthorizedUser.Administrator)]
+        public ActionResult ImportAspNetUserSubmit(string email, string salt, string password)
+        {
+            if (email.IsNullOrEmpty() || salt.IsNullOrEmpty() || password.IsNullOrEmpty())
+            {
+                return Content("Missing required value", "text/html");
+            }
+
+            // Prevents us from creating any user we wouldn't do otherwise
+            string token, authCode, error;
+            if (!PendingUser.CreatePendingUser(email, Guid.NewGuid().ToString(), null, out token, out authCode, out error))
+            {
+
+                return Content("<font color='red'>For [" + email + "] - " + error + "</font>", "text/html");
+            }
+
+            // Change the u/p to what's expected
+            var pending = Current.WriteDB.PendingUsers.Single(u => u.AuthCode == authCode);
+            pending.PasswordSalt = salt;
+            pending.PasswordHash = password;
+            Current.WriteDB.SubmitChanges();
+
+            User newUser;
+            if (!Models.User.CreateAccount(email, pending, Current.Now, null, null, out newUser, out error))
+            {
+                return Content("<font color='red'>For [" + email + "] and PendingUser.Id = " + pending.Id + " - " + error + "</font>", "text/html");
+            }
+
+            // And indicate that this is from ASP.NET Membership
+            newUser.PasswordVersion = MembershipCompat.PasswordVersion;
+            Current.WriteDB.SubmitChanges();
+
+            return Content("[" + email + "] became <a href='" + newUser.GetClaimedIdentifier() + "'>user</a>", "text/html");
         }
     }
 }

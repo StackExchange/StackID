@@ -23,6 +23,7 @@ namespace OpenIdProvider.Controllers
             var dbCheck = Current.ReadDB.Users.FirstOrDefault();
             Current.AddToCache("ping-sanity-check", "dummy-value", TimeSpan.FromMinutes(1));
             var cache = Current.GetFromCache<string>("string-not-found") ?? "";
+            KeyStore.GetKey(KeyStore.LatestKeyVersion);
 
             return
                 new ContentResult

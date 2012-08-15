@@ -73,13 +73,6 @@ namespace OpenIdProvider.Helpers
 
             var dif = (acceptWinCenter - created).TotalMinutes;
 
-            // 60 minute total drift permissable
-            if (Math.Abs(dif) >= 30)
-            {
-                failureReason = "Too much drift (" + dif + ")";
-                return false;
-            }
-
             // Cannot have already used this nonce from a different IP
             //   Ideally, the nonce wouldn't be re-used by anyone ever... but in practice
             //   proxies and bogus caches in browsers cause a lot of nonce re-use from the same

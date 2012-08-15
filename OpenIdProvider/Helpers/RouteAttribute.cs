@@ -102,7 +102,7 @@ namespace OpenIdProvider.Helpers
 
 
         public RouteAttribute(string url)
-            : this(url, "", null, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
+            : this(url, "", null, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn, false)
         {
         }
 
@@ -113,37 +113,43 @@ namespace OpenIdProvider.Helpers
         }
 
         public RouteAttribute(string url, AuthorizedUser users)
-            : this(url, "", null, RoutePriority.Default, users)
+            : this(url, "", null, RoutePriority.Default, users, false)
         {
         }
 
         public RouteAttribute(string url, HttpVerbs verbs)
-            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
+            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn, false)
+        {
+        }
+
+        public RouteAttribute(string url, HttpVerbs verbs, bool skipCSRF)
+            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn, skipCSRF)
         {
         }
 
         public RouteAttribute(string url, HttpVerbs verbs, AuthorizedUser users)
-            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn)
+            : this(url, "", verbs, RoutePriority.Default, AuthorizedUser.Administrator | AuthorizedUser.Anonymous | AuthorizedUser.LoggedIn, false)
         {
         }
 
         public RouteAttribute(string url, RoutePriority priority, AuthorizedUser users)
-            : this(url, "", null, priority, users)
+            : this(url, "", null, priority, users, false)
         {
         }
 
         public RouteAttribute(string url, HttpVerbs verbs, RoutePriority priority, AuthorizedUser users)
-            : this(url, "", verbs, priority, users)
+            : this(url, "", verbs, priority, users, false)
         {
         }
 
-        private RouteAttribute(string url, string name, HttpVerbs? verbs, RoutePriority priority, AuthorizedUser users)
+        private RouteAttribute(string url, string name, HttpVerbs? verbs, RoutePriority priority, AuthorizedUser users, bool skipCSRF)
         {
             Url = url.ToLower();
             Name = name;
             AcceptVerbs = verbs;
             Priority = priority;
             AuthorizedUsers = users;
+            SkipXSRFCheck = skipCSRF;
 
             if (AuthorizedUsers == 0) throw new ArgumentException("users must permit at least one class of user to reach this route");
         }
@@ -178,6 +184,11 @@ namespace OpenIdProvider.Helpers
         /// this route is added to the collection, making it match before other registered routes for a given url.
         /// </summary>
         public RoutePriority Priority { get; set; }
+
+        /// <summary>
+        /// Use with extreme care, setting this disables checking `fkey` on POSTs.
+        /// </summary>
+        public bool SkipXSRFCheck { get; set; }
 
         /// <summary>
         /// Gets any optional parameters contained by this Url. Optional parameters are specified with a ?, e.g. "users/{id}/{name?}".
@@ -215,7 +226,7 @@ namespace OpenIdProvider.Helpers
                 return true;
             }
 
-            if (AcceptVerbs.HasValue && (AcceptVerbs.Value | HttpVerbs.Post) != 0)
+            if (AcceptVerbs.HasValue && (AcceptVerbs.Value | HttpVerbs.Post) != 0 && !SkipXSRFCheck)
             {
                 var fkeyRaw = cc.HttpContext.Request.Form["fkey"];
                 Guid fkey;
