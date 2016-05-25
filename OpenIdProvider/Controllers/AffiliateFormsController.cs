@@ -578,6 +578,8 @@ namespace OpenIdProvider.Controllers
                 ViewData["email"] = email;
                 ViewData["affId"] = CurrentAffiliate.Id;
 
+                IPBanner.BadLoginAttempt(user, Current.RemoteIP);
+
                 return LoginIFrame(null, background, color);
             }
 
@@ -587,6 +589,8 @@ namespace OpenIdProvider.Controllers
                 ViewData["error_message"] = "Incorrect password";
                 ViewData["email"] = email;
                 ViewData["affId"] = CurrentAffiliate.Id;
+
+                IPBanner.BadLoginAttempt(user, Current.RemoteIP);
 
                 return LoginIFrame(null, background, color);
             }
